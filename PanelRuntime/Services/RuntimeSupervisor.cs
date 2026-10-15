@@ -30,6 +30,10 @@ public sealed class RuntimeSupervisor : IAsyncDisposable
     private readonly Aida64SensorProvider _aida64 = new();
     private readonly WindowsNetworkProvider _network;
     private readonly WindowsStorageProvider _storage;
+
+    private readonly MediaSessionProvider _mediaSession ;
+    private DispatcherTimer? _mediaTimer;
+    private long _lastMediaDispatchUtcMs;
     private readonly Stopwatch _wallClock = new();
     private readonly object _frameSignalLock = new();
 
@@ -64,6 +68,7 @@ public sealed class RuntimeSupervisor : IAsyncDisposable
         _status = status;
         _network = new WindowsNetworkProvider(config.NetworkAdapters);
         _storage = new WindowsStorageProvider(TimeSpan.FromMilliseconds(Math.Max(config.StorageHealthPollMs, 10000)));
+        _mediaSession = new MediaSessionProvider(dispatcher);
     }
 
     public bool IsRunning => _cts is not null;
@@ -88,6 +93,12 @@ public sealed class RuntimeSupervisor : IAsyncDisposable
 
         await LoadPanelAsync(webView, htmlPath);
         await PrimePanelDataAsync();
+        await OnUiAsync(() => 
+        {   
+            _mediaSession.EnsureAsync();
+            StartMediaTimer();
+            return Task.CompletedTask;
+        });
 
         _cts = new CancellationTokenSource();
         _wallClock.Restart();
@@ -102,6 +113,12 @@ public sealed class RuntimeSupervisor : IAsyncDisposable
 
     public async Task StopAsync()
     {
+        // In StopAsync, before canceling tasks / after cancel:
+        await OnUiAsync(() =>
+        {
+            StopMediaTimer();
+            return Task.CompletedTask;
+        });
         var cts = _cts;
         if (cts is null)
         {
@@ -136,48 +153,240 @@ public sealed class RuntimeSupervisor : IAsyncDisposable
     }
 
     private async Task LoadPanelAsync(WebView2 webView, string htmlPath)
+{
+    await OnUiAsync(async () =>
     {
-        await OnUiAsync(async () =>
+        await webView.EnsureCoreWebView2Async();
+        var core = webView.CoreWebView2;
+
+        core.Settings.AreDevToolsEnabled = true;
+        core.Settings.AreDefaultContextMenusEnabled = false;
+        core.Settings.IsStatusBarEnabled = false;
+
+        core.WebMessageReceived -= WebView_WebMessageReceived;
+        core.WebMessageReceived += WebView_WebMessageReceived;
+
+        // --- Virtual hosts MUST be set before any navigation ---
+        var panelDir = Path.GetDirectoryName(Path.GetFullPath(htmlPath))
+                       ?? throw new InvalidOperationException("Invalid panel html path.");
+        const string appHost = "panel-app.local";
+
+        try { core.ClearVirtualHostNameToFolderMapping(appHost); } catch { /* ignore */ }
+        core.SetVirtualHostNameToFolderMapping(
+            appHost,
+            panelDir,
+            CoreWebView2HostResourceAccessKind.Allow);
+        _log($"Panel mapped: http://{appHost}/ → {panelDir}");
+
+        var mediaHost = string.IsNullOrWhiteSpace(_config.MediaVirtualHost)
+            ? "panel-media.local"
+            : _config.MediaVirtualHost.Trim();
+
+        if (!string.IsNullOrWhiteSpace(_config.MediaFolder))
         {
-            await webView.EnsureCoreWebView2Async();
-            webView.CoreWebView2.Settings.AreDevToolsEnabled = true;
-            webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
-            webView.CoreWebView2.Settings.IsStatusBarEnabled = false;
-            webView.CoreWebView2.WebMessageReceived -= WebView_WebMessageReceived;
-            webView.CoreWebView2.WebMessageReceived += WebView_WebMessageReceived;
-
-            var target = new Uri(htmlPath).AbsoluteUri;
-            if (string.Equals(webView.Source?.AbsoluteUri, target, StringComparison.OrdinalIgnoreCase))
+            var mediaDir = Path.GetFullPath(_config.MediaFolder);
+            if (Directory.Exists(mediaDir))
             {
-                return;
+                try { core.ClearVirtualHostNameToFolderMapping(mediaHost); } catch { /* ignore */ }
+                core.SetVirtualHostNameToFolderMapping(
+                    mediaHost,
+                    mediaDir,
+                    CoreWebView2HostResourceAccessKind.Allow);
+                _log($"Media mapped: http://{mediaHost}/ → {mediaDir}");
             }
-
-            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            void Handler(object? sender, CoreWebView2NavigationCompletedEventArgs args)
+            else
             {
-                webView.NavigationCompleted -= Handler;
-                if (args.IsSuccess)
-                {
-                    tcs.TrySetResult();
-                }
-                else
-                {
-                    tcs.TrySetException(new InvalidOperationException($"WebView2 navigation failed: {args.WebErrorStatus}"));
-                }
+                _log($"Media folder missing: {mediaDir}");
             }
+        }
 
-            webView.NavigationCompleted += Handler;
-            webView.Source = new Uri(htmlPath);
-            await tcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
-        });
+        // --- Navigate via virtual host (NOT file://) ---
+        var panelUrl = $"http://{appHost}/index.html";
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        void Handler(object? sender, CoreWebView2NavigationCompletedEventArgs args)
+        {
+            core.NavigationCompleted -= Handler;
+            if (args.IsSuccess)
+                tcs.TrySetResult();
+            else
+                tcs.TrySetException(new InvalidOperationException(
+                    $"WebView2 navigation failed: {args.WebErrorStatus}"));
+        }
+
+        core.NavigationCompleted += Handler;
+        webView.Source = new Uri(panelUrl);
+        await tcs.Task.WaitAsync(TimeSpan.FromSeconds(15));
+
+        // List only after page is on http://panel-app.local/
+        await DispatchMediaListAsync();
+    });
+}
+
+    private async Task DispatchMediaListAsync()
+    {
+        if (_webView?.CoreWebView2 is null || string.IsNullOrWhiteSpace(_config.MediaFolder))
+        {
+           _log($"No Media found as path is null");
+            return;
+        }
+            
+
+        var exts = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            { ".jpg", ".jpeg", ".png", ".webp", ".gif", ".mp4", ".webm", ".mov" };
+
+        var files = Directory.EnumerateFiles(_config.MediaFolder)
+            .Where(f => exts.Contains(Path.GetExtension(f)))
+            .Select(f => Path.GetFileName(f))
+            .OrderBy(f => f)
+            .ToList();
+
+        _log($"Media folder: '{_config.MediaFolder}' exists={Directory.Exists(_config.MediaFolder ?? "")}");
+
+        // after building the list:
+        _log($"Media files found: {files.Count}");
+        //_log($"Activity: {source}; active refresh for {holdMs} ms.");
+        foreach (var f in files.Take(10)) _log($"  - {f}");
+
+        var hostName = string.IsNullOrWhiteSpace(_config.MediaVirtualHost)
+            ? "panel-media.local"
+            : _config.MediaVirtualHost.Trim();
+
+        var payload = new
+        {
+            host = $"http://{hostName}/",   // http, not https
+            intervalMs = Math.Max(2000, _config.MediaIntervalMs),
+            files
+        };
+
+        var json = JsonSerializer.Serialize(payload, JsonOptions);
+        await OnUiAsync(() =>
+            _webView.CoreWebView2.ExecuteScriptAsync(
+                $"window.dispatchEvent(new CustomEvent('media-list', {{ detail: {json} }}));"));
     }
+
+    private Task DispatchMediaSessionAsync(MediaSessionSnapshot snap)
+{
+    if (_webView?.CoreWebView2 is null) return Task.CompletedTask;
+    var json = JsonSerializer.Serialize(snap, JsonOptions);
+    return OnUiAsync(() =>
+        _webView!.CoreWebView2!.ExecuteScriptAsync(
+            $"window.dispatchEvent(new CustomEvent('media-session', {{ detail: {json} }}));"));
+}
+
+// extend WebView_WebMessageReceived:
+private void WebView_WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs args)
+{
+    var message = args.TryGetWebMessageAsString() ?? "";
+    if (message.Contains("rendered", StringComparison.OrdinalIgnoreCase))
+    {
+        SignalFrameLoop();
+    }
+    else if (message.StartsWith("media:", StringComparison.OrdinalIgnoreCase))
+    {
+        var cmd = message["media:".Length..].Trim();
+        _ = OnUiAsync(async () =>
+        {
+            try { await _mediaSession.CommandAsync(cmd); }
+            catch (Exception ex) { _log($"Media cmd '{cmd}': {ex.Message}"); }
+        });
+        NotifyUserActivity("media-cmd");
+    }
+    else if (message.StartsWith("volume:", StringComparison.OrdinalIgnoreCase))
+    {
+        var cmd = message["volume:".Length..].Trim();
+        try
+        {
+            _log($"Volume cmd='{cmd}'");
+            SystemVolume.Apply(cmd);
+            var (level, muted) = SystemVolume.GetState();
+            _log($"Volume now level={level:0.00} muted={muted}");
+            _ = DispatchSystemVolumeAsync(level, muted);
+        }
+        catch (Exception ex)
+        {
+            _log($"Volume: {ex.Message}");
+        }
+        NotifyUserActivity("volume");
+    }
+    else if (message.Contains("activity", StringComparison.OrdinalIgnoreCase))
+    {
+        NotifyUserActivity("webview");
+    }
+}
+
+private void StartMediaTimer()
+{
+    StopMediaTimer();
+    var ms = Math.Max(500, _config.SensorPollMs);
+    _mediaTimer = new DispatcherTimer
+    {
+        Interval = TimeSpan.FromMilliseconds(ms)
+    };
+    _mediaTimer.Tick += MediaTimer_Tick;
+    _mediaTimer.Start();
+    _log($"Media session timer started ({ms} ms) on UI thread.");
+}
+
+private void StopMediaTimer()
+{
+    if (_mediaTimer is null) return;
+    _mediaTimer.Tick -= MediaTimer_Tick;
+    _mediaTimer.Stop();
+    _mediaTimer = null;
+}
+
+private async void MediaTimer_Tick(object? sender, EventArgs e)
+{
+    try
+    {
+        var media = await _mediaSession.ReadAsync();
+        await DispatchMediaSessionAsync(media);
+
+        // tighten interval while playing for better resync
+        if (_mediaTimer is not null)
+        {
+            var playing = string.Equals(media.Status, "Playing", StringComparison.OrdinalIgnoreCase);
+            _mediaTimer.Interval = TimeSpan.FromMilliseconds(playing ? 500 : Math.Max(1000, _config.SensorPollMs));
+        }
+
+        // system volume → panel
+        try
+        {
+            var (level, muted) = SystemVolume.GetState();
+            await DispatchSystemVolumeAsync(level, muted);
+        }
+        catch (Exception vex)
+        {
+            _log($"Volume read: {vex.Message}");
+        }
+    }
+    catch (Exception ex)
+    {
+        _log($"Media session: {ex.Message}");
+    }
+}
+
+private Task DispatchSystemVolumeAsync(float level, bool muted)
+{
+    if (_webView?.CoreWebView2 is null) return Task.CompletedTask;
+
+    var payload = new { level, muted };
+    var json = JsonSerializer.Serialize(payload, JsonOptions);
+
+    return OnUiAsync(() =>
+        _webView!.CoreWebView2!.ExecuteScriptAsync(
+            $"window.dispatchEvent(new CustomEvent('system-volume', {{ detail: {json} }}));"));
+}
 
     private async Task SensorLoopAsync(CancellationToken token)
     {
         var interval = TimeSpan.FromMilliseconds(Math.Max(_config.SensorPollMs, 250));
         var storageInterval = Math.Max(_config.StorageHealthPollMs, 10000);
+        long nowMs = 0;
         while (!token.IsCancellationRequested)
         {
+            //Dispatch for AIDA64
             try
             {
                 var snapshot = _aida64.ReadSnapshot();
@@ -185,7 +394,7 @@ public sealed class RuntimeSupervisor : IAsyncDisposable
                 await DispatchSnapshotAsync(snapshot);
                 await DispatchNetworkSnapshotAsync(_network.ReadSnapshot());
 
-                var nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 if (nowMs - _lastStorageDispatchUtcMs >= storageInterval)
                 {
                     await DispatchStorageSnapshotAsync(_storage.ReadSnapshot());
@@ -203,7 +412,6 @@ public sealed class RuntimeSupervisor : IAsyncDisposable
                 _log($"AIDA64 loop error: {ex.Message}");
                 PublishStatus();
             }
-
             await DelayQuietly(interval, token);
         }
     }
@@ -452,19 +660,6 @@ public sealed class RuntimeSupervisor : IAsyncDisposable
             lastError);
 
         _dispatcher.InvokeAsync(() => _status(status));
-    }
-
-    private void WebView_WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs args)
-    {
-        var message = args.TryGetWebMessageAsString();
-        if (message.Contains("rendered", StringComparison.OrdinalIgnoreCase))
-        {
-            SignalFrameLoop();
-        }
-        else if (message.Contains("activity", StringComparison.OrdinalIgnoreCase))
-        {
-            NotifyUserActivity("webview");
-        }
     }
 
     private double IdleFps => Math.Clamp(_config.IdleFps > 0 ? _config.IdleFps : _config.Fps, 0.2, 30.0);

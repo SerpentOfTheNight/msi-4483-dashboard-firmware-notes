@@ -163,11 +163,66 @@ h1 {
 }
 
 .homeView {
-  height: 694px;
-  display: grid;
-  grid-template-rows: 198px 116px 168px 128px 36px;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  height: 694px; /* under topbar; tune if needed */
+  box-sizing: border-box;
+  min-height: 0;
 }
+
+.homePages {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  padding-bottom: 2px;
+}
+
+.homePage {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px 10px 12px;   /* top / sides / bottom */
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;                /* space between CPU grid, strips, etc. */
+}
+
+.homeDots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 0 4px;
+  flex-shrink: 0;
+}
+
+.homeDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.homeDot.active {
+  background: #7fd0ff;
+  transform: scale(1.2);
+}
+
+body[data-theme="light"] .homeDot {
+  background: rgba(0, 0, 0, 0.2);
+}
+body[data-theme="light"] .homeDot.active {
+  background: #1f6cc7;
+}
+
+/* keep footer from being crushed */
+.homeView > footer {
+  flex-shrink: 0;
+}
+
 
 .heroStats div,
 .tile,
@@ -906,4 +961,150 @@ body[data-theme="light"] .storageDiskCard {
   line-height: 1;
   font-weight: 850;
   font-variant-numeric: tabular-nums;
+}
+
+.mediaView {
+  height: 694px;
+  display: grid;
+  grid-template-rows: 1fr 38px;
+  gap: 12px;
+}
+
+.mediaStage {
+  position: relative;
+  border-radius: 8px;
+  background: #000;
+  border: 1px solid var(--card-border);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.mediaMedia {
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.mediaEmpty {
+  color: var(--fg-faint);
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.nowPlayingView {
+  display: grid;
+  grid-template-rows: auto auto auto auto auto 1fr;
+  gap: 12px;
+  padding: 8px 12px 16px;
+  height: 694px;
+  box-sizing: border-box;
+}
+
+.npArt {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges; /* try without if it looks too pixelated */
+}
+
+.npArtWrap {
+  /* prefer integer pixel sizes when possible */
+  max-height: 320px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #111;
+}
+
+.npArtPlaceholder {
+  font-size: 64px;
+  opacity: 0.35;
+}
+
+.npTitle {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.npArtist, .npAlbum, .npStatus {
+  text-align: center;
+  opacity: 0.8;
+  font-size: 14px;
+}
+
+.npControls {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  align-items: center;
+}
+
+.npBtn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.08);
+  color: inherit;
+  font-size: 22px;
+}
+
+.npBtnMain {
+  width: 72px;
+  height: 72px;
+  font-size: 28px;
+  background: rgba(255,255,255,0.16);
+}
+
+.npProgressWrap {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.12);
+  overflow: hidden;
+}
+
+.npProgressBar {
+  height: 100%;
+  width: 0%;
+  background: #7fd0ff;
+}
+
+.npTimes {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.npHomeTitle {
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.npVolume {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  align-items: center;
+}
+.npVolBarWrap {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.12);
+  overflow: hidden;
+  margin: 0 24px;
+}
+.npVolBar {
+  height: 100%;
+  width: 0%;
+  background: #7dff95;
+  transition: width 0.15s ease;
 }

@@ -17,6 +17,9 @@
     </section>
 
     <section id="homeView" class="homeView">
+  <div class="homePages">
+    <!-- PAGE 1: sensors -->
+    <div class="homePage" data-home-page="0">
       <section class="summaryGrid">
         <article class="summaryCard meterCard accent-green interactive" data-page="cpu">
           <div class="cardHead">
@@ -44,7 +47,7 @@
           <canvas class="sparkline" id="gpuTempSpark" width="200" height="46"></canvas>
         </article>
       </section>
-
+      <!-- cooling content -->
       <section class="stripCard coolingStrip meterCard accent-amber interactive" data-page="cooling">
         <div class="cardHead">
           <span>Cooling</span>
@@ -80,8 +83,40 @@
         </article>
       </section>
 
-      <section class="stripCard boardStrip meterCard accent-blue interactive" data-page="board">
+      <!-- Media gallery card -->
+      <!-- Now Playing card -->
+      <section class="secondaryGrid">
+        <article class="infoCard meterCard accent-pink interactive" data-page="media">
         <div class="cardHead">
+          <span>Media</span>
+          <b id="mediaCountHome">--</b>
+        </div>
+        <strong>Gallery</strong>
+        <div class="summaryMeta">
+          <span>Images · GIFs · Video</span>
+        </div>
+        </article>
+        <!-- Now Playing card -->
+        <article class="infoCard meterCard accent-pink interactive" data-page="nowplaying">
+          <div class="cardHead">
+            <span>Now Playing</span>
+            <b id="npHomeStatus">--</b>
+          </div>
+          <strong id="npHomeTitle" class="summaryValue npHomeTitle">Nothing playing</strong>
+          <div class="summaryMeta">
+            <span id="npHomeArtist">--</span>
+          </div>
+        </article>
+      </section>
+
+
+    </div>
+
+    <!-- PAGE 2: media + storage -->
+    <div class="homePage" data-home-page="1" hidden>
+      <section class="stripCard boardStrip meterCard accent-blue interactive" data-page="board">
+        <!-- storage content -->
+         <div class="cardHead">
           <span>Storage</span>
           <b id="storageUsage">--</b>
         </div>
@@ -91,15 +126,23 @@
           <span>Free <b id="storageFree">--</b></span>
         </div>
       </section>
+    </div>
+  </div>
 
-      <footer>
-        <span id="sensorCount">0 sensors</span>
-        <div class="footerRight">
-          <span id="updated">--</span>
-          <button class="themeToggle" type="button" aria-label="Toggle theme">A</button>
-        </div>
-      </footer>
-    </section>
+  <div class="homeDots" id="homeDots">
+    <button type="button" class="homeDot active" data-home-page="0" aria-label="Home page 1"></button>
+    <button type="button" class="homeDot" data-home-page="1" aria-label="Home page 2"></button>
+  </div>
+
+  <footer>
+    <span id="sensorCount">0 sensors</span>
+    <div class="footerRight">
+      <span id="updated">--</span>
+      <button class="themeToggle" type="button" aria-label="Toggle theme">A</button>
+    </div>
+  </footer>
+</section>
+
 
     <section id="detailView" class="detailView" hidden>
       <section class="detailHero">
@@ -119,6 +162,56 @@
         </div>
       </footer>
     </section>
+
+    <section id="mediaView" class="mediaView" hidden>
+  <div id="mediaStage" class="mediaStage">
+    <img id="mediaImage" class="mediaMedia" alt="" hidden>
+    <video id="mediaVideo" class="mediaMedia" playsinline muted hidden></video>
+    <div id="mediaEmpty" class="mediaEmpty">No media</div>
+  </div>
+  <footer>
+    <span id="mediaName">--</span>
+    <div class="footerRight">
+      <span id="mediaCounter">0 / 0</span>
+      <button class="themeToggle" type="button" aria-label="Toggle theme">A</button>
+    </div>
+  </footer>
+</section>
+<section id="nowPlayingView" class="nowPlayingView" hidden>
+  <div class="npArtWrap">
+    <img id="npArt" class="npArt" alt="" hidden>
+    <div id="npArtPlaceholder" class="npArtPlaceholder">♪</div>
+  </div>
+  <div class="npMeta">
+    <div id="npTitle" class="npTitle">Nothing playing</div>
+    <div id="npArtist" class="npArtist">--</div>
+    <div id="npAlbum" class="npAlbum">--</div>
+    <div id="npStatus" class="npStatus">Stopped</div>
+  </div>
+  <div class="npControls">
+    <button type="button" class="npBtn" data-media-cmd="prev" aria-label="Previous">⏮</button>
+    <button type="button" class="npBtn npBtnMain" data-media-cmd="playpause" aria-label="Play/Pause">⏯</button>
+    <button type="button" class="npBtn" data-media-cmd="next" aria-label="Next">⏭</button>
+  </div>
+  <div class="npProgressWrap">
+    <div id="npProgressBar" class="npProgressBar"></div>
+  </div>
+  <div class="npTimes">
+    <span id="npPos">0:00</span>
+    <span id="npDur">0:00</span>
+  </div>
+  <div class="npVolBarWrap">
+    <div id="npVolBar" class="npVolBar"></div>
+  </div>
+  <div class="npVolume">
+    <button type="button" class="npBtn" data-volume-cmd="down" aria-label="Volume down">🔉</button>
+    <button type="button" class="npBtn" data-volume-cmd="mute" id="npMuteBtn" aria-label="Mute">🔇</button>
+    <button type="button" class="npBtn" data-volume-cmd="up" aria-label="Volume up">🔊</button>
+  </div>
+  
+</section>
+
+
   </main>
   <script src="panel.js"></script>
 </body>

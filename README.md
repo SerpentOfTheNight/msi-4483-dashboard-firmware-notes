@@ -1,16 +1,105 @@
 # MSI 4483 Dashboard Firmware Notes / MSI 4483 Dashboard 固件研究记录
 
-> Unofficial research project. Use at your own risk.  
+> Unofficial research and expemental project. Use at your own risk.  
+> This Subversion modified by SerpentOfTheNight from the orginal by renjieah is currently the most full featured version of this but due to it being an active work in progress, no full click and run relesase of this has been published yet.
 > 非官方研究项目。刷写固件有风险，请自行承担后果。
+
+
+## English
+
+This repository documents two long-running firmware issues found on the MSI 4483 Dashboard panel, the patching idea, and an experimental custom display runtime.
+
+![Home dashboard](screenshots/home1.png)
+![Home Page 2 dashboard](screenshots/home2.png)
+![CPU dashboard](screenshots/cpu.png)
+![Network dashboard](screenshots/network.png)
+![Cooling dashboard](screenshots/cooling.png)
+![Media Display dashboard](screenshots/media_display.png)
+![Media Player dashboard](screenshots/mediaplayer.png)
+
+Device information:
+
+- USB HID: `VID=0x0DB0 / PID=0x4BB6`
+	Note some M-Vision have a of PID=0x17E0
+	Extra caution should be used when flashing them.
+	While unsure of the exaxt difference these flashes can be flashed onto it.
+- Firmware image: `conprog_4BB6_22100300.bin`
+- Custom runtime panel size: `480x800`
+
+### Issues with the Orginal M-Vision setup
+
+Two long-running major failures were observed:
+
+1. The panel gets stuck on the `loading` screen after several days. Power cycling does not recover it.
+2. The panel starts showing overlapping pages, flicker, or corrupted UI. Rebooting may not clear the state.
+
+Anoying other reson are:
+1. Certain things like M-Vision stopping support the weather page
+2. General laggyness
+3. The desire for more customization 
+
+### Root Cause
+
+The first issue is related to a firmware version check. The main display loop compares the saved content version against `21010100`. When it matches, the firmware jumps into loading mode and does not have a normal exit path. Since this state can come from NAND content updates, a reboot may simply reload the same state and trigger the loop again.
+
+The second issue is related to display slot ownership. Slot 8 and slot 9 should be mutually exclusive, but two firmware paths enable slot 8 without first disabling slot 9. Under some update, rotation, or page-state transitions, both slots can remain enabled. Two UI pipelines then write to the same framebuffer, causing overlapping pages, flicker, or corrupted display. If the bad state is persisted to NAND, rebooting can restore the same broken state.
+
+### Patch Idea
+
+The patch changes only three locations:
+
+1. Replace the loading-trigger comparison value with a value that should not normally match.
+2. Clear slot 9 enable before enabling slot 8 in one path.
+3. Apply the same slot 9 clear in the other matching slot 8 path.
+
+The patch script validates the original bytes before writing any change.
+
+### One More Thing: Custom Display Runtime
+
+Besides the bug fix, this project also contains an experimental custom display path. The goal is to turn the MSI fixed-function panel into a 480x800 custom secondary display driven by a PC application.
+
+It has two parts:
+
+1. Modified firmware: adds a custom USB HID data path so the host can stream frame data into the panel display buffer.
+2. `PanelRuntime`: a Windows .NET 8 + WPF + WebView2 app. It renders the UI as a web page, reads AIDA64 and Windows system data, and streams the rendered frame to the panel.
+
+It can be used to:
+
+- Show a custom hardware-monitoring dashboard.
+- Display AIDA64 sensor values such as CPU/GPU temperature, load, fan speed, and power.
+- Display Windows network, storage, and cooling information.
+- Switch pages via touch input.
+- Run at low FPS when idle and increase FPS during interaction.
+
+The UI is plain HTML/CSS/JS. Even after packaging, the web assets can remain exposed and easy to edit. With AI assistance, changing themes, layouts, pages, and widgets becomes much easier than editing firmware directly.
+
+When running `PanelRuntime`, it is recommended to stop MSI Dashboard / MSI Center services or background processes related to the panel first. The stock MSI software can access the same USB HID device; if both apps compete for it, the result may be stutter, flicker, jumps back to stock pages, random widgets like calculator opening or unstable connection.
+
+### Firmware Status
+
+- The Release page provides 3 flash packages. Each package contains the updater, `MsiHid.dll`, `NANDFAT_4BB6_22092000.bin`, and the matching `conprog_4BB6_22100300.bin`.
+- `bugfix-only` package: fixes only the loading loop and slot 8/slot 9 overlap bugs. It does not include the custom display path.
+- `v72` package: current custom display baseline, passed an 8-hour 5fps hardware run.
+- `v73` package: later candidate, offline self-check passed, not fully hardware-validated yet.
+
+The git repository should store hashes and notes. If firmware binaries are published, GitHub Releases are preferred over committing binaries into git history.
+
+### Risk
+
+This is not official firmware and not an official tool. Flashing the wrong image may make the device fail to boot and may require recovery tools or NAND reflashing. Do not flash without a recovery plan.
+
 
 ## 中文说明
 
 这个仓库整理了 MSI 4483 Dashboard 小屏的两个长期运行 bug、对应的补丁思路，以及一个实验性的自定义显示方案。
 
-![Home dashboard](screenshots/home.png)
+![Home dashboard](screenshots/home1.png)
+![Home Page 2 dashboard](screenshots/home2.png)
 ![CPU dashboard](screenshots/cpu.png)
 ![Network dashboard](screenshots/network.png)
 ![Cooling dashboard](screenshots/cooling.png)
+![Media Display dashboard](screenshots/media_display.png)
+![Media Player dashboard](screenshots/mediaplayer.png)
 
 设备信息：
 
@@ -74,75 +163,3 @@
 ### 风险
 
 这不是官方固件，也不是官方工具。刷写错误可能导致设备不启动，甚至需要恢复工具或重新刷 NAND。没有恢复手段时，不建议直接刷写。
-
-## English
-
-This repository documents two long-running firmware issues found on the MSI 4483 Dashboard panel, the patching idea, and an experimental custom display runtime.
-
-![Home dashboard](screenshots/home.png)
-![CPU dashboard](screenshots/cpu.png)
-![Network dashboard](screenshots/network.png)
-![Cooling dashboard](screenshots/cooling.png)
-
-Device information:
-
-- USB HID: `VID=0x0DB0 / PID=0x4BB6`
-- Firmware image: `conprog_4BB6_22100300.bin`
-- Custom runtime panel size: `480x800`
-
-### Issues
-
-Two long-running failures were observed:
-
-1. The panel gets stuck on the `loading` screen after several days. Power cycling does not recover it.
-2. The panel starts showing overlapping pages, flicker, or corrupted UI. Rebooting may not clear the state.
-
-### Root Cause
-
-The first issue is related to a firmware version check. The main display loop compares the saved content version against `21010100`. When it matches, the firmware jumps into loading mode and does not have a normal exit path. Since this state can come from NAND content updates, a reboot may simply reload the same state and trigger the loop again.
-
-The second issue is related to display slot ownership. Slot 8 and slot 9 should be mutually exclusive, but two firmware paths enable slot 8 without first disabling slot 9. Under some update, rotation, or page-state transitions, both slots can remain enabled. Two UI pipelines then write to the same framebuffer, causing overlapping pages, flicker, or corrupted display. If the bad state is persisted to NAND, rebooting can restore the same broken state.
-
-### Patch Idea
-
-The patch changes only three locations:
-
-1. Replace the loading-trigger comparison value with a value that should not normally match.
-2. Clear slot 9 enable before enabling slot 8 in one path.
-3. Apply the same slot 9 clear in the other matching slot 8 path.
-
-The patch script validates the original bytes before writing any change.
-
-### One More Thing: Custom Display Runtime
-
-Besides the bug fix, this project also contains an experimental custom display path. The goal is to turn the MSI fixed-function panel into a 480x800 custom secondary display driven by a PC application.
-
-It has two parts:
-
-1. Modified firmware: adds a custom USB HID data path so the host can stream frame data into the panel display buffer.
-2. `PanelRuntime`: a Windows .NET 8 + WPF + WebView2 app. It renders the UI as a web page, reads AIDA64 and Windows system data, and streams the rendered frame to the panel.
-
-It can be used to:
-
-- Show a custom hardware-monitoring dashboard.
-- Display AIDA64 sensor values such as CPU/GPU temperature, load, fan speed, and power.
-- Display Windows network, storage, and cooling information.
-- Switch pages via touch input.
-- Run at low FPS when idle and increase FPS during interaction.
-
-The UI is plain HTML/CSS/JS. Even after packaging, the web assets can remain exposed and easy to edit. With AI assistance, changing themes, layouts, pages, and widgets becomes much easier than editing firmware directly.
-
-When running `PanelRuntime`, it is recommended to stop MSI Dashboard / MSI Center services or background processes related to the panel first. The stock MSI software can access the same USB HID device; if both apps compete for it, the result may be stutter, flicker, jumps back to stock pages, or unstable connection.
-
-### Firmware Status
-
-- The Release page provides 3 flash packages. Each package contains the updater, `MsiHid.dll`, `NANDFAT_4BB6_22092000.bin`, and the matching `conprog_4BB6_22100300.bin`.
-- `bugfix-only` package: fixes only the loading loop and slot 8/slot 9 overlap bugs. It does not include the custom display path.
-- `v72` package: current custom display baseline, passed an 8-hour 5fps hardware run.
-- `v73` package: later candidate, offline self-check passed, not fully hardware-validated yet.
-
-The git repository should store hashes and notes. If firmware binaries are published, GitHub Releases are preferred over committing binaries into git history.
-
-### Risk
-
-This is not official firmware and not an official tool. Flashing the wrong image may make the device fail to boot and may require recovery tools or NAND reflashing. Do not flash without a recovery plan.

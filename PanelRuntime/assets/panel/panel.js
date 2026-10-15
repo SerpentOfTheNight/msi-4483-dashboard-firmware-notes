@@ -46,8 +46,67 @@ const pages = {
   network: { title: "Network", kicker: "Adapters", primaryLabel: "Download Rate" },
   memory: { title: "Memory", kicker: "RAM", primaryLabel: "Memory Use" },
   cooling: { title: "Cooling", kicker: "Fans + Thermals", primaryLabel: "Radiator Fan" },
+  media: { title: "MEDIA", kicker: "Gallery", primaryLabel: "" },
+  nowplaying: { title: "Now Playing", kicker: "Media", primaryLabel: "" },
   board: { title: "Storage", kicker: "Drives", primaryLabel: "Primary Drive Used" }
 };
+
+let homePageIndex = 0;
+const HOME_PAGE_COUNT = 2;
+
+function setHomePage(index) {
+  homePageIndex = Math.max(0, Math.min(HOME_PAGE_COUNT - 1, index));
+
+  document.querySelectorAll(".homePage").forEach((el) => {
+    const n = Number(el.dataset.homePage);
+    el.hidden = n !== homePageIndex;
+  });
+
+  document.querySelectorAll(".homeDot").forEach((dot) => {
+    const n = Number(dot.dataset.homePage);
+    dot.classList.toggle("active", n === homePageIndex);
+  });
+
+  notifyRendered();
+}
+
+document.getElementById("homeDots")?.addEventListener("click", (ev) => {
+  const btn = ev.target.closest("[data-home-page]");
+  if (!btn) return;
+  ev.preventDefault();
+  ev.stopPropagation();
+  setHomePage(Number(btn.dataset.homePage));
+  notifyActivity();
+});
+
+// swipe on home
+(function bindHomeSwipe() {
+  const host = document.querySelector(".homePages");
+  if (!host) return;
+
+  let startX = 0;
+  let startY = 0;
+  let tracking = false;
+
+  host.addEventListener("pointerdown", (e) => {
+    if (currentPage !== "home") return;
+    tracking = true;
+    startX = e.clientX;
+    startY = e.clientY;
+  }, { passive: true });
+
+  host.addEventListener("pointerup", (e) => {
+    if (!tracking || currentPage !== "home") return;
+    tracking = false;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return; // ignore taps / vertical scroll
+    if (dx < 0) setHomePage(homePageIndex + 1);
+    else setHomePage(homePageIndex - 1);
+    notifyActivity();
+  }, { passive: true });
+})();
+
 
 let snapshot = null;
 let networkSnapshot = null;
@@ -194,6 +253,282 @@ window.addEventListener("storage-snapshot", event => {
   renderDetail();
 });
 
+let mediaList = { host: "", intervalMs: 8000, files: [] };
+let mediaIndex = 0;
+let mediaTimer = null;
+
+const mediaIds = {
+  view: document.getElementById("mediaView"),
+  image: document.getElementById("mediaImage"),
+  video: document.getElementById("mediaVideo"),
+  empty: document.getElementById("mediaEmpty"),
+  name: document.getElementById("mediaName"),
+  counter: document.getElementById("mediaCounter"),
+  countHome: document.getElementById("mediaCountHome")
+};
+
+window.addEventListener("media-list", event => {
+  mediaList = event.detail || { host: "", intervalMs: 8000, files: [] };
+  showCurrentMedia();
+  mediaIndex = 0;
+  if (mediaIds.countHome) {
+    DispatchMediaListAsync();
+    mediaIds.countHome.textContent = mediaList.files.length || "0";
+  }
+  if (currentPage === "media") {
+    DispatchMediaListAsync();
+    showCurrentMedia();
+  }
+});
+
+function isVideo(name) {
+  return /\.(mp4|webm|mov)$/i.test(name);
+}
+
+function clearMediaTimer() {
+  if (mediaTimer) {
+    clearTimeout(mediaTimer);
+    mediaTimer = null;
+  }
+}
+
+function showCurrentMedia() {
+  clearMediaTimer();
+  const files = mediaList.files || [];
+  if (!files.length) {
+    mediaIds.image.hidden = true;
+    mediaIds.video.hidden = true;
+    mediaIds.empty.hidden = false;
+    mediaIds.name.textContent = "No media";
+    mediaIds.counter.textContent = "0 / 0";
+    return;
+  }
+
+  mediaIds.empty.hidden = true;
+  const name = files[mediaIndex % files.length];
+  const url = mediaList.host + name;
+
+  mediaIds.name.textContent = name;
+  mediaIds.counter.textContent = `${(mediaIndex % files.length) + 1} / ${files.length}`;
+
+  if (isVideo(name)) {
+    mediaIds.image.hidden = true;
+    mediaIds.video.hidden = false;
+    mediaIds.video.src = url;
+    mediaIds.video.onended = () => {
+      mediaIndex = (mediaIndex + 1) % files.length;
+      showCurrentMedia();
+    };
+    mediaIds.video.play().catch(() => {});
+    startMediaActivityBoost();
+  } else {
+    stopMediaActivityBoost();
+    mediaIds.video.pause();
+    mediaIds.video.removeAttribute("src");
+    mediaIds.video.hidden = true;
+    mediaIds.image.hidden = false;
+    mediaIds.image.src = url;
+    mediaTimer = setTimeout(() => {
+      mediaIndex = (mediaIndex + 1) % files.length;
+      showCurrentMedia();
+    }, mediaList.intervalMs || 8000);
+  }
+  notifyRendered();
+}
+
+let mediaActivityTimer = null;
+
+function startMediaActivityBoost() {
+  stopMediaActivityBoost();
+  // existing path: host listens for messages containing "activity"
+  const ping = () => {
+    try {
+      chrome.webview.postMessage("activity");
+    } catch (_) {
+      // ignore if not in WebView2
+    }
+  };
+  ping();
+  mediaActivityTimer = setInterval(ping, 2000); // every 2s while video plays
+}
+
+function stopMediaActivityBoost() {
+  if (mediaActivityTimer) {
+    clearInterval(mediaActivityTimer);
+    mediaActivityTimer = null;
+  }
+}
+
+// extend openPage
+const originalOpenPage = openPage;
+openPage = function(page) {
+  originalOpenPage(page);
+  if (page === "media") {
+    ids.homeView.hidden = true;
+    ids.detailView.hidden = true;
+    mediaIds.view.hidden = false;
+    showCurrentMedia();
+  } else {
+    if(page =="nowplaying")
+    {
+      renderNowPlaying();
+    }else
+    {
+      mediaIds.view.hidden = true;
+      clearMediaTimer();
+      mediaIds.video.pause();
+    }
+  }
+};
+
+// pages map
+pages.nowplaying = { title: "Now Playing", kicker: "Media", primaryLabel: "" };
+
+let mediaSession = null;
+let npSync = {
+  position: 0,
+  duration: 0,
+  playing: false,
+  syncedAt: 0,
+  lastReportedPos: -1,
+  trackKey: ""
+};
+
+function getLivePosition() {
+  if (!npSync.playing || !npSync.syncedAt) return npSync.position;
+  const elapsed = (performance.now() - npSync.syncedAt) / 1000;
+  const pos = npSync.position + elapsed;
+  return npSync.duration > 0 ? Math.min(pos, npSync.duration) : pos;
+}
+
+function applyMediaSession(detail) {
+  mediaSession = detail;
+
+  const newPos = Number(detail.positionSeconds) || 0;
+  const newDur = Number(detail.durationSeconds) || 0;
+  const playing = String(detail.status || "").toLowerCase() === "playing";
+  const trackKey = [
+    detail.title || "",
+    detail.artist || "",
+    detail.appName || "",
+    detail.album || ""
+  ].join("|");
+
+  const statusChanged = playing !== npSync.playing;
+  const trackChanged = trackKey !== npSync.trackKey;
+  const first = npSync.syncedAt === 0 && npSync.trackKey === "";
+  const reportedChanged =
+    npSync.lastReportedPos < 0 ||
+    Math.abs(newPos - npSync.lastReportedPos) > 0.5;
+
+  // Always take server duration (0 clears Chrome's leftover)
+  npSync.duration = newDur > 0 ? newDur : 0;
+  npSync.playing = playing;
+  npSync.trackKey = trackKey;
+
+  if (trackChanged || first || statusChanged || !playing || reportedChanged) {
+    npSync.position = newPos;
+    npSync.lastReportedPos = newPos;
+    // only run the local clock when we have a real timeline
+    npSync.syncedAt = npSync.duration > 0 && playing ? performance.now() : 0;
+  }
+
+  // No timeline (foobar, etc.) — hard clear so UI hides and times don't stick
+  if (npSync.duration <= 0) {
+    npSync.position = 0;
+    npSync.syncedAt = 0;
+    npSync.lastReportedPos = newPos;
+  }
+
+  renderNowPlaying();
+  updateNowPlayingProgress();
+}
+
+function updateNowPlayingProgress() {
+  if (currentPage !== "nowplaying") return;
+
+  const pos = getLivePosition();
+  const dur = npSync.duration || 0;
+  const pct = dur > 0 ? Math.min(100, (pos / dur) * 100) : 0;
+  const hasTimeline = dur > 0;
+
+  // id → getElementById("...")  (no dot)
+  // class → querySelector("....")
+  const bar = document.getElementById("npProgressBar");
+  const barWrap = document.querySelector(".npProgressWrap");
+  const times = document.querySelector(".npTimes");
+  const posEl = document.getElementById("npPos");
+  const durEl = document.getElementById("npDur");
+
+  if (bar) bar.style.width = hasTimeline ? pct + "%" : "0%";
+  if (posEl) posEl.textContent = hasTimeline ? formatTime(pos) : "--";
+  if (durEl) durEl.textContent = hasTimeline ? formatTime(dur) : "--";
+
+  // hide completely when foobar (etc.) sends no duration
+  if (barWrap) barWrap.style.display = hasTimeline ? "" : "none";
+  if (times) times.style.display = hasTimeline ? "" : "none";
+}
+
+window.addEventListener("media-session", (e) => applyMediaSession(e.detail || {}));
+
+// local tick — this is what moves the bar between (sparse) SMTC updates
+setInterval(updateNowPlayingProgress, 250);
+
+function formatTime(sec) {
+  sec = Math.max(0, Math.floor(sec || 0));
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function renderNowPlaying() {
+  const online = mediaSession && mediaSession.online;
+  const title = online ? mediaSession.title : "Nothing playing";
+  const artist = online ? mediaSession.artist : "--";
+  const album = online && mediaSession.album ? mediaSession.album : "";
+  const status = online ? mediaSession.status : "Stopped";
+
+  const homeTitle = document.getElementById("npHomeTitle");
+  const homeArtist = document.getElementById("npHomeArtist");
+  const homeStatus = document.getElementById("npHomeStatus");
+  if (homeTitle) homeTitle.textContent = title;
+  if (homeArtist) homeArtist.textContent = artist;
+  if (homeStatus) homeStatus.textContent = status;
+
+  if (currentPage !== "nowplaying") return;
+
+  document.getElementById("npTitle").textContent = title;
+  document.getElementById("npArtist").textContent = artist;
+  document.getElementById("npAlbum").textContent = album || "\u00A0";
+  document.getElementById("npStatus").textContent = status;
+
+  const art = document.getElementById("npArt");
+  const ph = document.getElementById("npArtPlaceholder");
+  if (online && mediaSession.thumbnailDataUrl) {
+    art.src = mediaSession.thumbnailDataUrl;
+    art.hidden = false;
+    ph.hidden = true;
+  } else {
+    art.removeAttribute("src");
+    art.hidden = true;
+    ph.hidden = false;
+  }
+  notifyRendered();
+}
+
+// buttons
+document.querySelectorAll("[data-media-cmd]").forEach((btn) => {
+  const fire = (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const cmd = btn.getAttribute("data-media-cmd");
+    postWebMessage("media:" + cmd);
+    notifyActivity();
+  };
+  //btn.addEventListener("pointerup", fire);
+  btn.addEventListener("click", fire);
+});
+
 document.addEventListener("pointerdown", notifyActivity, { passive: true });
 document.addEventListener("pointerup", notifyActivity, { passive: true });
 document.addEventListener("keydown", notifyActivity);
@@ -207,6 +542,37 @@ document.addEventListener("pointermove", () => {
 document.querySelectorAll("[data-page]").forEach(element => {
   element.addEventListener("pointerup", event => routeFromEvent(event, element));
   element.addEventListener("click", event => routeFromEvent(event, element));
+});
+
+function bindCommandButtons(selector, prefix) {
+  document.querySelectorAll(selector).forEach((btn) => {
+    btn.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const cmd = btn.getAttribute(selector.includes("volume") ? "data-volume-cmd" : "data-media-cmd");
+      if (!cmd) return;
+      postWebMessage(prefix + cmd);
+      notifyActivity();
+    });
+  });
+}
+
+// volume
+document.querySelectorAll("[data-volume-cmd]").forEach((btn) => {
+  btn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    postWebMessage("volume:" + btn.getAttribute("data-volume-cmd"));
+    notifyActivity();
+  });
+});
+
+window.addEventListener("system-volume", (e) => {
+  const { level, muted } = e.detail;
+  const bar = document.getElementById("npVolBar");
+  if (bar) bar.style.width = Math.round(level * 100) + "%";
+  const muteBtn = document.getElementById("npMuteBtn");
+  if (muteBtn) muteBtn.textContent = muted ? "🔈" : "🔇";
 });
 
 ids.backButton.addEventListener("pointerup", event => routeFromEvent(event, ids.backButton, "home"));
@@ -238,12 +604,31 @@ function openPage(page) {
 
   currentPage = page;
   document.body.dataset.page = page;
-  ids.homeView.hidden = page !== "home";
-  ids.detailView.hidden = page === "home";
+
+  const homeView = document.getElementById("homeView");
+  const detailView = document.getElementById("detailView");
+  const mediaView = document.getElementById("mediaView");
+  const nowPlayingView = document.getElementById("nowPlayingView");
+
+  if (homeView) homeView.hidden = page !== "home";
+  if (detailView) detailView.hidden = !(page !== "home" && page !== "media" && page !== "nowplaying");
+  if (mediaView) mediaView.hidden = page !== "media";
+  if (nowPlayingView) nowPlayingView.hidden = page !== "nowplaying";
+
   ids.backButton.hidden = page === "home";
   ids.pageTitle.textContent = pages[page].title;
   ids.pageKicker.textContent = pages[page].kicker;
-  renderDetail();
+  if (page === "home") {
+    setHomePage(homePageIndex); // keep last home sub-page
+  }else if (page === "media") {
+    // your existing media entry logic, e.g. showCurrentMedia()
+    if (typeof showCurrentMedia === "function") showCurrentMedia();
+  } else if (page === "nowplaying") {
+    if (typeof renderNowPlaying === "function") renderNowPlaying();
+  } else if (page !== "home") {
+    renderDetail();
+  }
+
   notifyRendered();
 }
 
@@ -1289,6 +1674,7 @@ document.querySelectorAll(".themeToggle").forEach(btn => {
       // ignore
     }
     applyTheme();
+    setHomePage(0);   // show home page 1 on load
   });
 });
 

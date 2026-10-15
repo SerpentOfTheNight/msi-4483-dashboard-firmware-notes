@@ -5,6 +5,8 @@ namespace PanelRuntime.Models;
 
 public sealed class RuntimeConfig
 {
+    /// <summary>"auto" | "en" | "zh"</summary>
+    public string UiLanguage { get; set; } = "auto";
     public int Width { get; set; } = 480;
     public int Height { get; set; } = 800;
     public double Fps { get; set; } = 5.0;
@@ -28,6 +30,11 @@ public sealed class RuntimeConfig
     public bool PreviewVisible { get; set; } = true;
     public bool SendToDevice { get; set; }
     public string Mode { get; set; } = "preview-only";
+
+    public string MediaFolder { get; set; } = "";
+    public int MediaIntervalMs { get; set; } = 8000;
+    public string MediaVirtualHost { get; set; } = "panel-media.local";
+    
     public Dictionary<string, string> NetworkAdapters { get; set; } = new(StringComparer.OrdinalIgnoreCase)
     {
         ["wifi"] = "WLAN",

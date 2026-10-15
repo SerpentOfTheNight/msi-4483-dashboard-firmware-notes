@@ -12,9 +12,8 @@ __pycache__/
 EBWebView/
 
 # Local/private firmware and large reverse-engineering artifacts
-firmware/original/
-firmware/archive/
-firmware/nand/
+PanelRuntime/bin/
+# The following is gernaric excluded 
 reverse_engineering/
 logs/
 artifacts/

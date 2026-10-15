@@ -41,6 +41,7 @@ public partial class MainWindow : Window
         _autoStart = autoStart;
         _configPath = ResolveFile("appsettings.json");
         _config = RuntimeConfig.Load(_configPath);
+        UiStrings.Init(_config.UiLanguage);
         _htmlPath = ResolveFile(_config.PanelHtml);
         ModeText.Text = _config.Mode;
         AidaText.Text = "not started";
@@ -179,10 +180,10 @@ public partial class MainWindow : Window
 
     private void InitializeTrayIcon()
     {
-        _showMenuItem = new Forms.ToolStripMenuItem("显示窗口");
+        _showMenuItem = new Forms.ToolStripMenuItem(UiStrings.T("Show window", "显示窗口"));
         _showMenuItem.Click += ShowMenuItem_Click;
 
-        _runMenuItem = new Forms.ToolStripMenuItem("启动运行");
+        _runMenuItem = new Forms.ToolStripMenuItem(UiStrings.T("Start runtime", "启动运行"));
         _runMenuItem.Click += (_, _) => Dispatcher.InvokeAsync(async () =>
         {
             if (_runtime is null)
@@ -195,14 +196,14 @@ public partial class MainWindow : Window
             }
         });
 
-        _startupMenuItem = new Forms.ToolStripMenuItem("开机启动");
+        _startupMenuItem = new Forms.ToolStripMenuItem(UiStrings.T("Start with Windows", "开机启动"));
         _startupMenuItem.Click += (_, _) => Dispatcher.Invoke(() =>
         {
             SetStartupEnabled(!IsStartupEnabled());
             UpdateTrayMenu();
         });
 
-        var exitMenuItem = new Forms.ToolStripMenuItem("退出");
+        var exitMenuItem = new Forms.ToolStripMenuItem(UiStrings.T("Exit", "退出"));
         exitMenuItem.Click += (_, _) => Dispatcher.InvokeAsync(ExitApplicationAsync);
 
         var menu = new Forms.ContextMenuStrip();
@@ -275,7 +276,13 @@ public partial class MainWindow : Window
         UpdateTrayMenu();
         if (showTip)
         {
-            _trayIcon?.ShowBalloonTip(1800, "PanelRuntime", "已缩小到系统托盘，右键图标可退出或设置开机启动。", Forms.ToolTipIcon.Info);
+            _trayIcon?.ShowBalloonTip(
+                1800,
+                "PanelRuntime",
+                UiStrings.T(
+                    "Minimized to the system tray. Right-click the icon to exit or manage startup.",
+                    "已缩小到系统托盘，右键图标可退出或设置开机启动。"),
+                Forms.ToolTipIcon.Info);
         }
     }
 
@@ -309,13 +316,17 @@ public partial class MainWindow : Window
     {
         if (_showMenuItem is not null)
         {
-            _showMenuItem.Text = _parkedToTray ? "显示窗口" : "隐藏到托盘";
+            _showMenuItem.Text = _parkedToTray
+                ? UiStrings.T("Show window", "显示窗口")
+                : UiStrings.T("Hide to tray", "隐藏到托盘");
             _showMenuItem.Click -= ShowMenuItem_Click;
             _showMenuItem.Click += ShowMenuItem_Click;
         }
         if (_runMenuItem is not null)
         {
-            _runMenuItem.Text = _runtime is null ? "启动运行" : "停止运行";
+            _runMenuItem.Text = _runtime is null
+                ? UiStrings.T("Start runtime", "启动运行")
+                : UiStrings.T("Stop runtime", "停止运行");
         }
         if (_startupMenuItem is not null)
         {
