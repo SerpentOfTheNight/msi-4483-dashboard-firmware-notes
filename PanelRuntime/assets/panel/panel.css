@@ -1216,3 +1216,22 @@ body[data-theme="light"] .storageDiskCard {
 .newsView > footer {
   flex-shrink: 0;
 }
+
+.shellGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+.shellBtn {
+  border: none;
+  border-radius: 12px;
+  padding: 14px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(255,255,255,0.08);
+  color: inherit;
+  cursor: pointer;
+}
+.shellBtn:active {
+  background: rgba(255,255,255,0.16);
+}

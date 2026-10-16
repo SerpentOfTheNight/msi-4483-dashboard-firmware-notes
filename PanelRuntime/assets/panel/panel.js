@@ -522,6 +522,17 @@ function renderNowPlaying() {
   notifyRendered();
 }
 
+document.querySelectorAll("[data-shell-cmd]").forEach((btn) => {
+  btn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const cmd = btn.getAttribute("data-shell-cmd");
+    if (!cmd) return;
+    postWebMessage("shell:" + cmd);
+    notifyActivity();
+  });
+});
+
 // buttons
 document.querySelectorAll("[data-media-cmd]").forEach((btn) => {
   const fire = (ev) => {

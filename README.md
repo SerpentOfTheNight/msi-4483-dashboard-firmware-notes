@@ -88,6 +88,38 @@ The git repository should store hashes and notes. If firmware binaries are publi
 
 This is not official firmware and not an official tool. Flashing the wrong image may make the device fail to boot and may require recovery tools or NAND reflashing. Do not flash without a recovery plan.
 
+### Current Benefits Vs the Orginal MSI M-Vision Dashboard
+- Much More customization options 
+- Abilty to control what is currently being display on the M-Vision form the comfort of your mouse
+- Using AIDA64 allows for more sensor information to be accesable for one to display
+- RSS Feed(s)
+- Weather, can show you current weather condion and upcoming forcast
+- Media Player with Windows media integration support to display media metadata, thumbnails etc with complatable players
+- Media Gallery that can switch between types, play videos, gif, show pic...
+
+### Things about equal between the flashed and the Orginal MSI M-Vision Dashboard
+- Support for hotkey to open calculator from the display
+- Support for hotkey to open browser from the display
+
+
+### Current Drawbacks Vs the Orginal MSI M-Vision Dashboard 
+- Not as user friendly for the customization
+- Due to using AID64 to get the sensor data, AID64 does cost money after it's trial period
+- No current allowences to use the MSI themes they had for the M-Vision
+- No current support to adjust the CPU BCLK/Ratio from the display
+- No current support for system start/shutdown/reboot from the display
+- No current Timer/Countdown page for on the display
+- No current support for hotkey to hide/show desktop from the display
+- No current support to start the MSI overlay widget from the display
+- No current support to get into the MSI Center from the display
+- No current support to control the led light modes from the display
+- No current support to play audio out of the M-Vision's little speaker
+
+
+### Current Issues
+- Sometimes on exiting from PanelRuntime the the M-Vision doesn't return to the limited funtionality of the lower level MSI M-Vision Dashboard on the device and will still show the last screen from PannelRuntime, this is correct with power cycling it. 
+
+
 
 ## 中文说明
 

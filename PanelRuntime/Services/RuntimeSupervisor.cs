@@ -318,7 +318,20 @@ private void WebView_WebMessageReceived(object? sender, CoreWebView2WebMessageRe
         }
         NotifyUserActivity("volume");
     }
-    else if (message.Contains("activity", StringComparison.OrdinalIgnoreCase))
+    else if (message.StartsWith("shell:", StringComparison.OrdinalIgnoreCase))
+    {
+        var cmd = message["shell:".Length..].Trim().ToLowerInvariant();
+        try
+        {
+            ShellActions.Run(cmd);
+            _log($"Shell: {cmd}");
+        }
+        catch (Exception ex)
+        {
+            _log($"Shell '{cmd}': {ex.Message}");
+        }
+        NotifyUserActivity("shell");
+    }else if (message.Contains("activity", StringComparison.OrdinalIgnoreCase))
     {
         NotifyUserActivity("webview");
     }
