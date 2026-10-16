@@ -126,6 +126,29 @@
           <span>Free <b id="storageFree">--</b></span>
         </div>
       </section>
+      <section class="secondaryGrid">
+        <article class="infoCard meterCard accent-blue interactive" data-page="weather">
+          <div class="cardHead">
+            <span>Weather</span>
+            <b id="wxHomeTemp">--</b>
+          </div>
+          <strong id="wxHomeCond" class="summaryValue">--</strong>
+          <div class="summaryMeta">
+            <span id="wxHomeRange">--</span>
+          </div>
+        </article>
+
+        <article class="infoCard meterCard accent-amber interactive" data-page="news">
+          <div class="cardHead">
+            <span>News</span>
+            <b id="rssHomeCount">--</b>
+          </div>
+          <strong class="summaryValue">RSS</strong>
+          <div class="summaryMeta">
+            <span id="rssHomeTitle">--</span>
+          </div>
+        </article>
+      </section>
     </div>
   </div>
 
@@ -208,7 +231,34 @@
     <button type="button" class="npBtn" data-volume-cmd="mute" id="npMuteBtn" aria-label="Mute">🔇</button>
     <button type="button" class="npBtn" data-volume-cmd="up" aria-label="Volume up">🔊</button>
   </div>
-  
+</section>
+<section id="weatherView" class="weatherView" hidden>
+  <div class="wxCurrent">
+    <div id="wxTemp" class="wxTemp">--</div>
+    <div id="wxCond" class="wxCond">--</div>
+    <div class="wxMeta">
+      <span id="wxHumidity">Humidity --</span>
+      <span id="wxWind">Wind --</span>
+    </div>
+  </div>
+  <div id="wxForecast" class="wxForecast"></div>
+  <footer>
+    <span id="wxUpdated">--</span>
+    <div class="footerRight">
+      <button class="themeToggle" type="button">A</button>
+    </div>
+  </footer>
+</section>
+
+<section id="newsView" class="newsView" hidden>
+  <div id="rssList" class="rssList"></div>
+  <div id="rssPager" class="rssPager">--</div>
+  <footer>
+    <span id="rssUpdated">--</span>
+    <div class="footerRight">
+      <button class="themeToggle" type="button" aria-label="Toggle theme">A</button>
+    </div>
+  </footer>
 </section>
 
 

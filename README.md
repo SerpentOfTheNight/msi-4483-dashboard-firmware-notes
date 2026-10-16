@@ -36,7 +36,7 @@ Two long-running major failures were observed:
 Anoying other reson are:
 1. Certain things like M-Vision stopping support the weather page
 2. General laggyness
-3. The desire for more customization 
+3. The desire for more customization and so the M-Vison can funtion closer to other min-displays on the market.
 
 ### Root Cause
 

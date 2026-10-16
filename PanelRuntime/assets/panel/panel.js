@@ -48,7 +48,9 @@ const pages = {
   cooling: { title: "Cooling", kicker: "Fans + Thermals", primaryLabel: "Radiator Fan" },
   media: { title: "MEDIA", kicker: "Gallery", primaryLabel: "" },
   nowplaying: { title: "Now Playing", kicker: "Media", primaryLabel: "" },
-  board: { title: "Storage", kicker: "Drives", primaryLabel: "Primary Drive Used" }
+  board: { title: "Storage", kicker: "Drives", primaryLabel: "Primary Drive Used" },
+  weather:{ title: "Weather", kicker: "Local", primaryLabel: "" },
+  news: { title: "News", kicker: "RSS", primaryLabel: "" }
 };
 
 let homePageIndex = 0;
@@ -292,6 +294,7 @@ function clearMediaTimer() {
   }
 }
 
+
 function showCurrentMedia() {
   clearMediaTimer();
   const files = mediaList.files || [];
@@ -358,6 +361,11 @@ function stopMediaActivityBoost() {
     mediaActivityTimer = null;
   }
 }
+
+
+
+
+
 
 // extend openPage
 const originalOpenPage = openPage;
@@ -578,6 +586,210 @@ window.addEventListener("system-volume", (e) => {
 ids.backButton.addEventListener("pointerup", event => routeFromEvent(event, ids.backButton, "home"));
 ids.backButton.addEventListener("click", event => routeFromEvent(event, ids.backButton, "home"));
 
+pages.weather = { title: "Weather", kicker: "Local", primaryLabel: "" };
+pages.news = { title: "News", kicker: "RSS", primaryLabel: "" };
+
+let weatherSnapshot = null;
+let rssSnapshot = null;
+let rssPageIndex = 0;
+let rssCycleTimer = null;
+
+// in openPage toggles:
+// weatherView.hidden = page !== "weather";
+// newsView.hidden = page !== "news";
+
+window.addEventListener("weather-snapshot", (e) => {
+  weatherSnapshot = e.detail;
+  renderWeather();
+});
+
+
+// How many cards fit on the panel without scrolling
+const RSS_PAGE_SIZE = 4;
+const RSS_CYCLE_MS = 12000; // 12s per page
+window.addEventListener("rss-snapshot", (e) => {
+  rssSnapshot = e.detail;
+  rssPageIndex = 0;
+  renderRss();
+  restartRssCycle();
+});
+
+document.getElementById("newsView")?.addEventListener("pointerup", (ev) => {
+  if (currentPage !== "news") return;
+  if (rssPageCount() <= 1) return;
+  if (ev.target.closest("footer, .themeToggle, button")) return;
+
+  const view = document.getElementById("newsView");
+  if (!view) return;
+
+  const rect = view.getBoundingClientRect();
+  const x = ev.clientX - rect.left;
+  const mid = rect.width / 2;
+  const pages = rssPageCount();
+
+  if (x < mid) {
+    rssPageIndex = (rssPageIndex - 1 + pages) % pages; // left → back
+  } else {
+    rssPageIndex = (rssPageIndex + 1) % pages;         // right → next
+  }
+
+  renderRssListOnly();
+  restartRssCycle();
+  notifyActivity();
+  notifyRendered();
+}, { passive: true });
+
+function renderWeather() {
+  const w = weatherSnapshot;
+  const unit = w?.unit || "°F";
+  const homeTemp = document.getElementById("wxHomeTemp");
+  const homeCond = document.getElementById("wxHomeCond");
+  const homeRange = document.getElementById("wxHomeRange");
+
+  if (!w || !w.online) {
+    if (homeTemp) homeTemp.textContent = "--";
+    if (homeCond) homeCond.textContent = "Offline";
+    if (homeRange) homeRange.textContent = "--";
+  } else {
+    if (homeTemp) homeTemp.textContent = Math.round(w.temp) + unit;
+    if (homeCond) homeCond.textContent = w.condition || "--";
+    const d0 = w.days && w.days[0];
+    if (homeRange) {
+      homeRange.textContent = d0
+        ? `${Math.round(d0.high)}° / ${Math.round(d0.low)}°`
+        : "--";
+    }
+  }
+
+  if (currentPage !== "weather") return;
+  if (!w || !w.online) return;
+
+  document.getElementById("wxTemp").textContent = Math.round(w.temp) + unit;
+  document.getElementById("wxCond").textContent = w.condition || "--";
+  document.getElementById("wxHumidity").textContent =
+    "Humidity " + Math.round(w.humidity) + "%";
+  document.getElementById("wxWind").textContent =
+    "Wind " + Math.round(w.wind);
+  document.getElementById("wxUpdated").textContent = timeText(w.updatedAt);
+
+  const box = document.getElementById("wxForecast");
+  box.replaceChildren(...(w.days || []).map((d) => {
+    const el = document.createElement("div");
+    el.className = "wxDay";
+    el.innerHTML =
+      `<span>${d.label}</span>` +
+      `<b>${Math.round(d.high)}°</b>` +
+      `<span>${Math.round(d.low)}°</span>` +
+      `<div>${d.condition || ""}</div>`;
+    return el;
+  }));
+  notifyRendered();
+}
+
+function rssItems() {
+  return rssSnapshot && rssSnapshot.online ? (rssSnapshot.items || []) : [];
+}
+
+function rssPageCount() {
+  const n = rssItems().length;
+  return n === 0 ? 1 : Math.ceil(n / RSS_PAGE_SIZE);
+}
+
+function restartRssCycle() {
+  if (rssCycleTimer) {
+    clearInterval(rssCycleTimer);
+    rssCycleTimer = null;
+  }
+  if (rssPageCount() <= 1) return;
+  rssCycleTimer = setInterval(() => {
+    if (currentPage !== "news") return;
+    rssPageIndex = (rssPageIndex + 1) % rssPageCount();
+    renderRssListOnly();
+    notifyRendered();
+  }, RSS_CYCLE_MS);
+}
+
+function renderRss() {
+  const items = rssItems();
+  const countEl = document.getElementById("rssHomeCount");
+  const titleEl = document.getElementById("rssHomeTitle");
+  if (countEl) countEl.textContent = String(items.length || 0);
+  if (titleEl) titleEl.textContent = items[0]?.title?.slice(0, 40) || "--";
+
+  if (currentPage !== "news") return;
+
+  const updated = document.getElementById("rssUpdated");
+  if (updated) {
+    updated.textContent = rssSnapshot?.updatedAt
+      ? timeText(rssSnapshot.updatedAt)
+      : "--";
+  }
+  renderRssListOnly();
+  restartRssCycle();
+  notifyRendered();
+}
+
+function renderRssListOnly() {
+  const list = document.getElementById("rssList");
+  const pager = document.getElementById("rssPager");
+  if (!list) return;
+
+  const items = rssItems();
+  if (!items.length) {
+    list.innerHTML =
+      `<article class="rssItem"><div class="title">${
+        rssSnapshot?.error || "No headlines"
+      }</div></article>`;
+    if (pager) pager.textContent = "";
+    return;
+  }
+
+  const pages = rssPageCount();
+  rssPageIndex = ((rssPageIndex % pages) + pages) % pages;
+  const start = rssPageIndex * RSS_PAGE_SIZE;
+  const slice = items.slice(start, start + RSS_PAGE_SIZE);
+
+  list.replaceChildren(...slice.map((it) => {
+    const el = document.createElement("article");
+    el.className = "rssItem";
+
+    const src = document.createElement("div");
+    src.className = "src";
+    src.textContent = it.source || "";
+
+    const title = document.createElement("div");
+    title.className = "title";
+    title.textContent = it.title || "";
+
+    const blurb = document.createElement("div");
+    blurb.className = "blurb";
+    blurb.textContent = it.summary || "";
+
+    const when = document.createElement("div");
+    when.className = "when";
+    when.textContent = it.published || "";
+
+    el.append(src, title);
+    if (it.summary) el.append(blurb);
+    el.append(when);
+    return el;
+  }));
+
+  if (pager) {
+    pager.textContent = pages > 1
+      ? `${rssPageIndex + 1} / ${pages}`
+      : "";
+  }
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function notifyActivity(message = "activity") {
   lastActivityPost = Date.now();
   if (window.chrome && window.chrome.webview) {
@@ -598,9 +810,7 @@ function notifyRendered() {
 }
 
 function openPage(page) {
-  if (!pages[page]) {
-    page = "home";
-  }
+  if (!pages[page]) page = "home";
 
   currentPage = page;
   document.body.dataset.page = page;
@@ -609,22 +819,30 @@ function openPage(page) {
   const detailView = document.getElementById("detailView");
   const mediaView = document.getElementById("mediaView");
   const nowPlayingView = document.getElementById("nowPlayingView");
+  const weatherView = document.getElementById("weatherView");
+  const newsView = document.getElementById("newsView");
 
   if (homeView) homeView.hidden = page !== "home";
-  if (detailView) detailView.hidden = !(page !== "home" && page !== "media" && page !== "nowplaying");
+  if (detailView) detailView.hidden =
+    !(page !== "home" && page !== "media" && page !== "nowplaying" &&
+      page !== "weather" && page !== "news");
   if (mediaView) mediaView.hidden = page !== "media";
   if (nowPlayingView) nowPlayingView.hidden = page !== "nowplaying";
+  if (weatherView) weatherView.hidden = page !== "weather";
+  if (newsView) newsView.hidden = page !== "news";
 
   ids.backButton.hidden = page === "home";
   ids.pageTitle.textContent = pages[page].title;
   ids.pageKicker.textContent = pages[page].kicker;
-  if (page === "home") {
-    setHomePage(homePageIndex); // keep last home sub-page
-  }else if (page === "media") {
-    // your existing media entry logic, e.g. showCurrentMedia()
-    if (typeof showCurrentMedia === "function") showCurrentMedia();
-  } else if (page === "nowplaying") {
-    if (typeof renderNowPlaying === "function") renderNowPlaying();
+
+  if (page === "media" && typeof showCurrentMedia === "function") {
+    showCurrentMedia();
+  } else if (page === "nowplaying" && typeof renderNowPlaying === "function") {
+    renderNowPlaying();
+  } else if (page === "weather" && typeof renderWeather === "function") {
+    renderWeather();          // paint from cached snapshot
+  } else if (page === "news" && typeof renderRss === "function") {
+    renderRss();
   } else if (page !== "home") {
     renderDetail();
   }

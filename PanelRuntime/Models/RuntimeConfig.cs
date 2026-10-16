@@ -34,6 +34,14 @@ public sealed class RuntimeConfig
     public string MediaFolder { get; set; } = "";
     public int MediaIntervalMs { get; set; } = 8000;
     public string MediaVirtualHost { get; set; } = "panel-media.local";
+
+    public List<RssFeedConfig> RssFeeds { get; set; } = new();
+    public int RssPollMinutes { get; set; } = 15;
+    public double WeatherLatitude { get; set; } = 44.4142;
+    public double WeatherLongitude { get; set; } = -110.5786;
+    public string WeatherTempUnit { get; set; } = "fahrenheit"; // or celsius
+    public int WeatherPollMinutes { get; set; } = 20;
+
     
     public Dictionary<string, string> NetworkAdapters { get; set; } = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -74,4 +82,10 @@ public sealed class RuntimeConfig
         }
         return Convert.ToUInt32(text, 10);
     }
+    
+}
+public sealed class RssFeedConfig
+{
+    public string Name { get; set; } = "";
+    public string Url { get; set; } = "";
 }

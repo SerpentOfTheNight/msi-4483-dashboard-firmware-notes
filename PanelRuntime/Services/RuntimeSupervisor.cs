@@ -56,6 +56,11 @@ public sealed class RuntimeSupervisor : IAsyncDisposable
     private SensorSnapshot? _lastSnapshot;
     private string _lastError = "";
 
+    private readonly WeatherService _weather;
+    private readonly RssFeedService _rss;
+    private DispatcherTimer? _weatherTimer;
+    private DispatcherTimer? _rssTimer;
+
     public RuntimeSupervisor(
         RuntimeConfig config,
         Dispatcher dispatcher,
@@ -69,6 +74,8 @@ public sealed class RuntimeSupervisor : IAsyncDisposable
         _network = new WindowsNetworkProvider(config.NetworkAdapters);
         _storage = new WindowsStorageProvider(TimeSpan.FromMilliseconds(Math.Max(config.StorageHealthPollMs, 10000)));
         _mediaSession = new MediaSessionProvider(dispatcher);
+        _weather = new WeatherService(config);
+        _rss = new RssFeedService(config);
     }
 
     public bool IsRunning => _cts is not null;
@@ -99,6 +106,7 @@ public sealed class RuntimeSupervisor : IAsyncDisposable
             StartMediaTimer();
             return Task.CompletedTask;
         });
+        StartInfoTimers();
 
         _cts = new CancellationTokenSource();
         _wallClock.Restart();
@@ -114,6 +122,7 @@ public sealed class RuntimeSupervisor : IAsyncDisposable
     public async Task StopAsync()
     {
         // In StopAsync, before canceling tasks / after cancel:
+        StopInfoTimers();
         await OnUiAsync(() =>
         {
             StopMediaTimer();
@@ -365,6 +374,86 @@ private async void MediaTimer_Tick(object? sender, EventArgs e)
     {
         _log($"Media session: {ex.Message}");
     }
+}
+
+private void StartInfoTimers()
+{
+    StopInfoTimers();
+
+    _weatherTimer = new DispatcherTimer
+    {
+        Interval = TimeSpan.FromMinutes(Math.Max(5, _config.WeatherPollMinutes))
+    };
+    _weatherTimer.Tick += async (_, _) => await PollWeatherAsync();
+    _weatherTimer.Start();
+
+    _rssTimer = new DispatcherTimer
+    {
+        Interval = TimeSpan.FromMinutes(Math.Max(5, _config.RssPollMinutes))
+    };
+    _rssTimer.Tick += async (_, _) => await PollRssAsync();
+    _rssTimer.Start();
+
+    _ = PollWeatherAsync();
+    _ = PollRssAsync();
+}
+
+private void StopInfoTimers()
+{
+    if (_weatherTimer is not null)
+    {
+        _weatherTimer.Stop();
+        _weatherTimer = null;
+    }
+    if (_rssTimer is not null)
+    {
+        _rssTimer.Stop();
+        _rssTimer = null;
+    }
+}
+
+private async Task PollWeatherAsync()
+{
+    try
+    {
+        var snap = await _weather.ReadAsync();
+        await DispatchWeatherAsync(snap);
+    }
+    catch (Exception ex)
+    {
+        _log($"Weather: {ex.Message}");
+    }
+}
+
+private async Task PollRssAsync()
+{
+    try
+    {
+        var snap = await _rss.ReadAsync();
+        await DispatchRssAsync(snap);
+    }
+    catch (Exception ex)
+    {
+        _log($"RSS: {ex.Message}");
+    }
+}
+
+private Task DispatchWeatherAsync(WeatherSnapshot snap)
+{
+    if (_webView?.CoreWebView2 is null) return Task.CompletedTask;
+    var json = JsonSerializer.Serialize(snap, JsonOptions);
+    return OnUiAsync(() =>
+        _webView!.CoreWebView2!.ExecuteScriptAsync(
+            $"window.dispatchEvent(new CustomEvent('weather-snapshot', {{ detail: {json} }}));"));
+}
+
+private Task DispatchRssAsync(RssSnapshot snap)
+{
+    if (_webView?.CoreWebView2 is null) return Task.CompletedTask;
+    var json = JsonSerializer.Serialize(snap, JsonOptions);
+    return OnUiAsync(() =>
+        _webView!.CoreWebView2!.ExecuteScriptAsync(
+            $"window.dispatchEvent(new CustomEvent('rss-snapshot', {{ detail: {json} }}));"));
 }
 
 private Task DispatchSystemVolumeAsync(float level, bool muted)
