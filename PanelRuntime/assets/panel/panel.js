@@ -271,14 +271,12 @@ const mediaIds = {
 
 window.addEventListener("media-list", event => {
   mediaList = event.detail || { host: "", intervalMs: 8000, files: [] };
-  showCurrentMedia();
   mediaIndex = 0;
   if (mediaIds.countHome) {
-    DispatchMediaListAsync();
-    mediaIds.countHome.textContent = mediaList.files.length || "0";
+    mediaIds.countHome.textContent = String(mediaList.files?.length || 0);
   }
+  // do NOT call showCurrentMedia() here unless you're on media
   if (currentPage === "media") {
-    DispatchMediaListAsync();
     showCurrentMedia();
   }
 });
@@ -540,12 +538,6 @@ document.querySelectorAll("[data-media-cmd]").forEach((btn) => {
 document.addEventListener("pointerdown", notifyActivity, { passive: true });
 document.addEventListener("pointerup", notifyActivity, { passive: true });
 document.addEventListener("keydown", notifyActivity);
-document.addEventListener("pointermove", () => {
-  const now = Date.now();
-  if (now - lastActivityPost >= 250) {
-    notifyActivity();
-  }
-}, { passive: true });
 
 document.querySelectorAll("[data-page]").forEach(element => {
   element.addEventListener("pointerup", event => routeFromEvent(event, element));
@@ -606,13 +598,31 @@ window.addEventListener("weather-snapshot", (e) => {
 
 // How many cards fit on the panel without scrolling
 const RSS_PAGE_SIZE = 4;
-const RSS_CYCLE_MS = 12000; // 12s per page
+let RSS_CYCLE_MS = 12000; // ms per page this is a defaut value that get reset by the appsetting value
 window.addEventListener("rss-snapshot", (e) => {
   rssSnapshot = e.detail;
+  const ms = Number(e.detail?.displayRefreshMs);
+  if (Number.isFinite(ms) && ms >= 3000) {
+    rssCycleMs = ms;
+  }
   rssPageIndex = 0;
   renderRss();
   restartRssCycle();
 });
+
+function restartRssCycle() {
+  if (rssCycleTimer) {
+    clearInterval(rssCycleTimer);
+    rssCycleTimer = null;
+  }
+  if (rssPageCount() <= 1) return;
+  rssCycleTimer = setInterval(() => {
+    if (currentPage !== "news") return;
+    rssPageIndex = (rssPageIndex + 1) % rssPageCount();
+    renderRssListOnly();
+    notifyRendered();
+  }, rssCycleMs);  // was RSS_CYCLE_MS
+}
 
 document.getElementById("newsView")?.addEventListener("pointerup", (ev) => {
   if (currentPage !== "news") return;
@@ -670,7 +680,6 @@ function renderWeather() {
     "Humidity " + Math.round(w.humidity) + "%";
   document.getElementById("wxWind").textContent =
     "Wind " + Math.round(w.wind);
-  document.getElementById("wxUpdated").textContent = timeText(w.updatedAt);
 
   const box = document.getElementById("wxForecast");
   box.replaceChildren(...(w.days || []).map((d) => {
@@ -719,14 +728,10 @@ function renderRss() {
   if (currentPage !== "news") return;
 
   const updated = document.getElementById("rssUpdated");
-  if (updated) {
-    updated.textContent = rssSnapshot?.updatedAt
-      ? timeText(rssSnapshot.updatedAt)
-      : "--";
-  }
   renderRssListOnly();
   restartRssCycle();
   notifyRendered();
+  paintFooterClock();
 }
 
 function renderRssListOnly() {
@@ -837,16 +842,18 @@ function openPage(page) {
 
   if (page === "media" && typeof showCurrentMedia === "function") {
     showCurrentMedia();
-  } else if (page === "nowplaying" && typeof renderNowPlaying === "function") {
-    renderNowPlaying();
-  } else if (page === "weather" && typeof renderWeather === "function") {
-    renderWeather();          // paint from cached snapshot
-  } else if (page === "news" && typeof renderRss === "function") {
-    renderRss();
-  } else if (page !== "home") {
-    renderDetail();
+  } else {
+    stopMediaActivityBoost();
+    if (page === "nowplaying" && typeof renderNowPlaying === "function") {
+      renderNowPlaying();
+    } else if (page === "weather" && typeof renderWeather === "function") {
+      renderWeather();          // paint from cached snapshot
+    } else if (page === "news" && typeof renderRss === "function") {
+      renderRss();
+    } else if (page !== "home") {
+      renderDetail();
+    }
   }
-
   notifyRendered();
 }
 
@@ -1413,6 +1420,7 @@ function render() {
   renderNetwork();
   renderStorage();
   renderDetail();
+  paintFooterClock();
 }
 
 function renderDetail() {
@@ -1840,6 +1848,22 @@ function timeText(ms) {
     minute: "2-digit",
     second: "2-digit"
   });
+}
+
+function paintFooterClock() {
+  const text = new Date().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+
+  if (currentPage === "news") {
+    const el = document.getElementById("rssUpdated");
+    if (el) el.textContent = text;
+  } else if (currentPage === "weather") {
+    const el = document.getElementById("wxUpdated");
+    if (el) el.textContent = text;
+  }
 }
 
 render();

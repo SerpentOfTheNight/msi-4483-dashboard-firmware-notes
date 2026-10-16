@@ -19,6 +19,8 @@ public sealed class RssSnapshot
     public string Error { get; set; } = "";
     public List<RssItemDto> Items { get; set; } = new();
     public long UpdatedAt { get; set; }
+
+    public int DisplayRefreshMs { get; set; }  // panel cycle time
 }
 
 public sealed class RssFeedService
@@ -84,7 +86,8 @@ public sealed class RssFeedService
             Online = items.Count > 0,
             Error = items.Count == 0 && errors.Count > 0 ? string.Join("; ", errors) : "",
             Items = items,
-            UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            UpdatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            DisplayRefreshMs = Math.Max(3000, _config.RssDisplayRefreshMs)
         };
     }
 

@@ -36,6 +36,8 @@ public sealed class RuntimeConfig
     public string MediaVirtualHost { get; set; } = "panel-media.local";
 
     public List<RssFeedConfig> RssFeeds { get; set; } = new();
+
+    public int RssDisplayRefreshMs { get; set; } = 18000;
     public int RssPollMinutes { get; set; } = 15;
     public double WeatherLatitude { get; set; } = 44.4142;
     public double WeatherLongitude { get; set; } = -110.5786;
