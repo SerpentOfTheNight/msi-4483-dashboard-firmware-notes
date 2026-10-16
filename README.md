@@ -90,10 +90,10 @@ This is not official firmware and not an official tool. Flashing the wrong image
 
 ### Current Benefits Vs the Orginal MSI M-Vision Dashboard
 - Much More customization options 
-- Abilty to control what is currently being display on the M-Vision form the comfort of your mouse
+- Abilty to control what is currently being display on the M-Vision and use it also from the comfort of your mouse
 - Using AIDA64 allows for more sensor information to be accesable for one to display
 - RSS Feed(s)
-- Weather, can show you current weather condion and upcoming forcast
+- Weather, can show your current weather conditions and upcoming forecast
 - Media Player with Windows media integration support to display media metadata, thumbnails etc with complatable players
 - Media Gallery that can switch between types, play videos, gif, show pic...
 
@@ -117,7 +117,7 @@ This is not official firmware and not an official tool. Flashing the wrong image
 
 
 ### Current Issues
-- Sometimes on exiting from PanelRuntime the the M-Vision doesn't return to the limited funtionality of the lower level MSI M-Vision Dashboard on the device and will still show the last screen from PannelRuntime, this is correct with power cycling it. 
+- Sometimes on exiting from PanelRuntime the the M-Vision doesn't return to the limited funtionality of the lower level MSI M-Vision Dashboard on the device and will still show the last screen from PannelRuntime, this is corrected with power cycling it. 
 
 
 
