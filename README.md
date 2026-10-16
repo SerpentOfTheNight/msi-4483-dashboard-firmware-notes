@@ -91,15 +91,17 @@ This is not official firmware and not an official tool. Flashing the wrong image
 ### Current Benefits Vs the Orginal MSI M-Vision Dashboard
 - Much More customization options 
 - Abilty to control what is currently being display on the M-Vision and use it also from the comfort of your mouse
+- Ability to freely switch between what is being displayed (no hard setup that the orginal MSI M-Vision Dashboard has of having the display only show systme data vs having a custom media being displayed)
 - Using AIDA64 allows for more sensor information to be accesable for one to display
 - RSS Feed(s)
-- Weather, can show your current weather conditions and upcoming forecast
+- Weather, can show your current weather conditions and upcoming forecast (Unlike MSI which stopped supporting weather service back in June of 2024)
 - Media Player with Windows media integration support to display media metadata, thumbnails etc with complatable players
-- Media Gallery that can switch between types, play videos, gif, show pic...
+- Media Gallery that can switch between types, play videos, gif, show pic, allows for high quality videos to be shown vs the native app...
 
 ### Things about equal between the flashed and the Orginal MSI M-Vision Dashboard
 - Support for hotkey to open calculator from the display
 - Support for hotkey to open browser from the display
+- Support for hotkey to hide/show desktop from the display
 
 
 ### Current Drawbacks Vs the Orginal MSI M-Vision Dashboard 
@@ -109,15 +111,18 @@ This is not official firmware and not an official tool. Flashing the wrong image
 - No current support to adjust the CPU BCLK/Ratio from the display
 - No current support for system start/shutdown/reboot from the display
 - No current Timer/Countdown page for on the display
-- No current support for hotkey to hide/show desktop from the display
 - No current support to start the MSI overlay widget from the display
 - No current support to get into the MSI Center from the display
 - No current support to control the led light modes from the display
 - No current support to play audio out of the M-Vision's little speaker
+- No current support to control the brightness 
 
 
 ### Current Issues
-- Sometimes on exiting from PanelRuntime the the M-Vision doesn't return to the limited funtionality of the lower level MSI M-Vision Dashboard on the device and will still show the last screen from PannelRuntime, this is corrected with power cycling it. 
+- Sometimes on exiting from PanelRuntime the the M-Vision doesn't return to the limited funtionality of the lower level MSI M-Vision Dashboard on the device and will still show the last frame from PannelRuntime, this is corrected with power cycling it. 
+- If stopped in PannelRuntime the, the M-Vision has a tendency to timeout when trying to start again from the same PannelRuntime instence. This is currently corrected by fully shutting down the PannelRuntime program and then starting PannelRuntime again and then starting the display connection
+- Storage doesn't show drives that are in spanned disk arrangement
+- The Storage window currently only shows 4 ~.5 ish drives any more than that and it's cut off, that said all comptable drives are still shown via cycling on the home page 
 
 
 

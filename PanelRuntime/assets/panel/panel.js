@@ -249,11 +249,41 @@ window.addEventListener("network-snapshot", event => {
   renderDetail();
 });
 
-window.addEventListener("storage-snapshot", event => {
+window.addEventListener("storage-snapshot", (event) => {
   storageSnapshot = event.detail;
+  const disks = storageDisks();
+  if (storageDiskIndex >= disks.length) storageDiskIndex = 0;
   renderStorage();
+  restartStorageCycle();
   renderDetail();
 });
+
+// adds support for cycling the shown storge spec on the home screen 
+let storageDiskIndex = 0;
+let storageCycleTimer = null;
+const STORAGE_CYCLE_MS = 5000; // 2–3s
+function storageDiskList() {
+  return typeof storageDisks === "function" ? storageDisks() : [];
+}
+
+function selectedStorageDisk() {
+  const disks = storageDisks();
+  if (!disks.length) return null;
+  storageDiskIndex = ((storageDiskIndex % disks.length) + disks.length) % disks.length;
+  return disks[storageDiskIndex];
+}
+
+
+
+function cycleStorageDisk(delta = 1) {
+  const disks = storageDiskList();
+  if (disks.length <= 1) return;
+  storageDiskIndex = (storageDiskIndex + delta + disks.length) % disks.length;
+  renderStorage();
+  notifyActivity();
+  notifyRendered();
+}
+
 
 let mediaList = { host: "", intervalMs: 8000, files: [] };
 let mediaIndex = 0;
@@ -359,10 +389,6 @@ function stopMediaActivityBoost() {
     mediaActivityTimer = null;
   }
 }
-
-
-
-
 
 
 // extend openPage
@@ -1196,16 +1222,26 @@ function storageVolumes() {
 }
 
 function storageDisks() {
-  return storageSnapshot && Array.isArray(storageSnapshot.disks)
-    ? storageSnapshot.disks.slice().sort((a, b) => {
-      const aHasC = diskHasVolume(a, "C:");
-      const bHasC = diskHasVolume(b, "C:");
-      if (aHasC !== bHasC) {
-        return aHasC ? -1 : 1;
-      }
-      return (Number(a.diskNumber) || 0) - (Number(b.diskNumber) || 0);
-    })
+  const raw = storageSnapshot && Array.isArray(storageSnapshot.disks)
+    ? storageSnapshot.disks.slice()
     : [];
+
+  return raw.sort((a, b) => {
+    const la = primaryLetter(a);
+    const lb = primaryLetter(b);
+    if (la && lb && la !== lb) return la.localeCompare(lb);
+    if (la && !lb) return -1;
+    if (!la && lb) return 1;
+    return (Number(a.diskNumber) || 0) - (Number(b.diskNumber) || 0);
+  });
+}
+
+function primaryLetter(disk) {
+  const vols = volumesForDisk(disk)
+    .map(v => (v.name || "").replace(":", "").toUpperCase())
+    .filter(Boolean)
+    .sort();
+  return vols[0] || "";
 }
 
 function diskHasVolume(disk, volumeName) {
@@ -1343,14 +1379,41 @@ function diskHealthText(disk) {
 }
 
 function renderStorage() {
-  const disk = primaryStorageDisk();
+  const disks = storageDisks();
+  const disk = selectedStorageDisk();
   const volumes = volumesForDisk(disk);
   const usedPercent = Math.round(diskUsedPercent(disk));
-  setText(ids.storageUsage, `${usedPercent}%`);
-  setText(ids.storageModel, shortDiskModel(disk));
+
+  setText(ids.storageUsage, disk ? `${usedPercent}%` : "--");
+  setText(ids.storageModel, disk ? shortDiskModel(disk) : "--");
   setText(ids.storageTemp, diskTempText(disk));
   setText(ids.storageFree, freeSummary(volumes, 3));
   setLevel(ids.storageUsage, usedPercent);
+
+  const counter = document.getElementById("storageDiskCounter");
+  if (counter) {
+    counter.textContent = disks.length
+      ? `${storageDiskIndex + 1}/${disks.length}`
+      : "";
+  }
+}
+
+function restartStorageCycle() {
+  if (storageCycleTimer) {
+    clearInterval(storageCycleTimer);
+    storageCycleTimer = null;
+  }
+  const disks = storageDisks();
+  if (disks.length <= 1) return;
+
+  storageCycleTimer = setInterval(() => {
+    const list = storageDisks();
+    if (list.length <= 1) return;
+    storageDiskIndex = (storageDiskIndex + 1) % list.length;
+    renderStorage();
+    // one frame when the strip changes (cheap)
+    if (currentPage === "home") notifyRendered();
+  }, STORAGE_CYCLE_MS);
 }
 
 function renderNetwork() {
@@ -1429,6 +1492,7 @@ function render() {
   setText(ids.sensorCount, `${count} sensors`);
   setText(ids.updated, snapshot ? timeText(snapshot.updatedAt) : "--");
   renderNetwork();
+  
   renderStorage();
   renderDetail();
   paintFooterClock();
@@ -1928,10 +1992,9 @@ document.querySelectorAll(".themeToggle").forEach(btn => {
     }
     applyTheme();
     setHomePage(0);   // show home page 1 on load
+    restartStorageCycle();  // safe if snapshot is still empty (timer no-ops or waits)
   });
 });
-
-applyTheme();
 
 setInterval(() => {
   if (themeMode === "auto") applyTheme();
