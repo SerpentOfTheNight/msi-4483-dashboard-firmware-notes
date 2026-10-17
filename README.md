@@ -23,6 +23,9 @@ Device information:
 	Note some M-Vision have a of PID=0x17E0
 	Extra caution should be used when flashing them.
 	While unsure of the exaxt difference these flashes can be flashed onto it.
+
+	There is also a versions of the M-Vision with a PID=0x4483 this one hasn't been at all tested. Extra Extra Caution if you chose to be the first one to mess with it cuz your in uncharted waters.
+
 - Firmware image: `conprog_4BB6_22100300.bin`
 - Custom runtime panel size: `480x800`
 
@@ -117,13 +120,13 @@ This is not official firmware and not an official tool. Flashing the wrong image
 - No current support to get into the MSI Center from the display
 - No current support to control the led light modes from the display
 - No current support to play audio out of the M-Vision's little speaker
+- No current support to set the sound the M-Vision play's on certain states (Power On, CPU Alarm, DDR Alarm, etc)
 
 
 ### Current Issues
 - Sometimes on exiting from PanelRuntime the the M-Vision doesn't return to the limited funtionality of the lower level MSI M-Vision Dashboard on the device and will still show the last frame from PannelRuntime, this is corrected with power cycling it. 
 - If stopped in PannelRuntime the, the M-Vision has a tendency to timeout when trying to start again from the same PannelRuntime instence. This is currently corrected by fully shutting down the PannelRuntime program and then starting PannelRuntime again and then starting the display connection
-- Storage doesn't show drives that are in spanned disk arrangement
-- The Storage window currently only shows 4 ~.5 ish drives any more than that and it's cut off, that said all comptable drives are still shown via cycling on the home page 
+- Much UI work is needed
 
 
 

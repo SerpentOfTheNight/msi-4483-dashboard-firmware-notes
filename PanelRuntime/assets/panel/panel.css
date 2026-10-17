@@ -844,17 +844,40 @@ body[data-page="network"] .detailList {
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
-
 .storageDiskList {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   align-content: start;
+  padding: 4px 2px 8px;
 }
+
+.detailList { overflow: hidden; }
+body[data-page="board"] .detailList { overflow: hidden; }
+.storageDiskCard { height: 132px; }  /* ~4 fit in 694px */
+
+body[data-page="board"] .detailView,
+body[data-page="network"] .detailView {
+  grid-template-rows: 1fr 34px;
+  min-height: 0;
+}
+
+body[data-page="board"] .detailList,
+body[data-page="network"] .detailList {
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;              /* was hidden */
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+  background: transparent;
+  border: 0;
+}
+
+
 
 .storageDiskCard {
   position: relative;
-  height: 132px;
-  padding: 15px 16px;
+  height: 118px;
+  padding: 12px 14px;
   border-radius: 8px;
   background: var(--card-bg);
   border: 1px solid var(--card-border);

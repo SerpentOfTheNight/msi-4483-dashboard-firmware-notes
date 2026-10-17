@@ -89,24 +89,27 @@ public sealed class WindowsStorageProvider
                 diskVolumes));
         }
 
+        
         var unmatched = volumes
-            .Where(volume => string.IsNullOrWhiteSpace(volume.DiskNumber))
+            .Where(volume => string.IsNullOrWhiteSpace(volume.DiskNumber)
+                || !disks.Any(d => string.Equals(d.DiskNumber, volume.DiskNumber, StringComparison.OrdinalIgnoreCase)))
             .OrderBy(volume => volume.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
-        if (disks.Count == 0 && unmatched.Count > 0)
+
+        if (unmatched.Count > 0)
         {
             disks.Add(new StorageDiskValue(
-                "",
-                "Windows Storage",
-                "",
-                "",
+                "vol",
+                "Other volumes",
                 "",
                 "",
                 "",
-                unmatched.Sum(volume => volume.TotalBytes),
-                FormatBytes(unmatched.Sum(volume => volume.TotalBytes)),
-                unmatched.Select(volume => volume.Name).ToList()));
-        }
+                "",
+                "",
+                unmatched.Sum(v => v.TotalBytes),
+                FormatBytes(unmatched.Sum(v => v.TotalBytes)),
+                unmatched.Select(v => v.Name).Distinct(StringComparer.OrdinalIgnoreCase).ToList()));
+            }
 
         return disks;
     }
@@ -138,14 +141,61 @@ public sealed class WindowsStorageProvider
     private static (List<DiskInfo> Items, string Error) ProbeDiskInfo()
     {
         const string script = """
-            $ErrorActionPreference='Stop'
-            $items = foreach ($volume in (Get-Volume | Where-Object { $_.DriveLetter })) {
-              $partition = Get-Partition -DriveLetter $volume.DriveLetter -ErrorAction SilentlyContinue | Select-Object -First 1
-              if ($null -eq $partition) { continue }
-              $disk = Get-Disk -Number $partition.DiskNumber -ErrorAction SilentlyContinue
-              if ($null -eq $disk) { continue }
-              [pscustomobject]@{
-                DiskNumber = [string]$disk.Number
+        $ErrorActionPreference='Stop'
+        $items = @()
+
+        # Every fixed/ready volume with a letter
+        foreach ($vol in (Get-Volume | Where-Object { $_.DriveLetter -and $_.DriveType -eq 'Fixed' })) {
+            $letter = ([string]$vol.DriveLetter) + ':'
+            $parts = @(Get-Partition -DriveLetter $vol.DriveLetter -ErrorAction SilentlyContinue)
+            if ($parts.Count -eq 0) {
+                # No partition mapping (rare) — still surface the volume
+                $items += [pscustomobject]@{
+                    DiskNumber = 'vol'
+                    Model = if ($vol.FileSystemLabel) { $vol.FileSystemLabel } else { 'Volume' }
+                    SerialNumber = ''
+                    Health = [string]$vol.HealthStatus
+                    OperationalStatus = [string]$vol.OperationalStatus
+                    BusType = ''
+                    MediaType = ''
+                    SizeBytes = [int64]($vol.Size)
+                    DriveLetter = $letter
+                    IsSpanned = $false
+                }
+                continue
+            }
+
+            $diskNumbers = @($parts | ForEach-Object { $_.DiskNumber } | Sort-Object -Unique)
+            $isSpanned = $diskNumbers.Count -gt 1
+
+            foreach ($dn in $diskNumbers) {
+                $disk = Get-Disk -Number $dn -ErrorAction SilentlyContinue
+                if ($null -eq $disk) { continue }
+                $model = [string]$disk.FriendlyName
+                if ($isSpanned) {
+                    $model = ($model + ' (span)').Trim()
+                }
+                $items += [pscustomobject]@{
+                    DiskNumber = [string]$dn
+                        Model = $model
+                        SerialNumber = [string]$disk.SerialNumber
+                        Health = [string]$disk.HealthStatus
+                        OperationalStatus = [string]($disk.OperationalStatus -join ',')
+                        BusType = [string]$disk.BusType
+                        MediaType = [string]$disk.MediaType
+                        SizeBytes = [int64]$disk.Size
+                        DriveLetter = $letter
+                    IsSpanned = $isSpanned
+                }
+            }
+        }
+
+        # Disks with no lettered volume still appear (unallocated / system)
+        foreach ($disk in (Get-Disk -ErrorAction SilentlyContinue)) {
+            $dn = [string]$disk.Number
+            if ($items | Where-Object { $_.DiskNumber -eq $dn }) { continue }
+            $items += [pscustomobject]@{
+                DiskNumber = $dn
                 Model = [string]$disk.FriendlyName
                 SerialNumber = [string]$disk.SerialNumber
                 Health = [string]$disk.HealthStatus
@@ -153,12 +203,13 @@ public sealed class WindowsStorageProvider
                 BusType = [string]$disk.BusType
                 MediaType = [string]$disk.MediaType
                 SizeBytes = [int64]$disk.Size
-                DriveLetter = ([string]$volume.DriveLetter) + ':'
-              }
+                DriveLetter = ''
+                IsSpanned = $false
             }
-            $items | ConvertTo-Json -Compress
-            """;
+        }
 
+        $items | ConvertTo-Json -Compress
+        """;
         try
         {
             using var process = new Process();
@@ -213,7 +264,7 @@ public sealed class WindowsStorageProvider
         {
             var diskNumber = ReadString(element, "DiskNumber");
             var driveLetter = ReadString(element, "DriveLetter");
-            if (string.IsNullOrWhiteSpace(diskNumber) || string.IsNullOrWhiteSpace(driveLetter))
+            if (string.IsNullOrWhiteSpace(diskNumber) || string.IsNullOrWhiteSpace(driveLetter))// driveLetter may be empty for disks with no volume
             {
                 continue;
             }
