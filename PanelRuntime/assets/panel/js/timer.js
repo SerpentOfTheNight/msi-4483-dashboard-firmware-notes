@@ -1,7 +1,7 @@
 let timerState = {
   mode: "countdown",
   running: false,
-  remainingMs: 5 * 60 * 1000, // default 5 min so presets aren't required
+  remainingMs: 5 * 60 * 1000,
   elapsedMs: 0,
   alarmAt: null,
   alarming: false,
@@ -9,13 +9,44 @@ let timerState = {
 };
 
 function formatTimerMs(ms) {
-  ms = Math.max(0, Math.floor(ms));
-  const s = Math.floor(ms / 1000);
-  const m = Math.floor(s / 60);
-  const h = Math.floor(m / 60);
-  const ss = String(s % 60).padStart(2, "0");
-  const mm = String(m % 60).padStart(2, "0");
+  ms = Math.max(0, Math.floor(ms || 0));
+  const total = Math.floor(ms / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const mm = String(m).padStart(2, "0");
+  const ss = String(s).padStart(2, "0");
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+function nextTimeTodayOrTomorrow(h, m) {
+  const d = new Date();
+  d.setSeconds(0, 0);
+  d.setHours(h, m, 0, 0);
+  if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+  return d.getTime();
+}
+
+function updateTimerChrome() {
+  const mode = timerState.mode;
+  const pad = document.getElementById("timerPad");
+  const adj = document.getElementById("timerAdjust");
+  const alarmRow = document.getElementById("timerAlarmRow");
+
+  document.querySelectorAll(".timerModeBtn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.timerMode === mode);
+  });
+
+  document.querySelectorAll(".timerPresetCd").forEach((b) => {
+    b.hidden = mode !== "countdown";
+  });
+  document.querySelectorAll(".timerPresetAl").forEach((b) => {
+    b.hidden = mode !== "alarm";
+  });
+
+  if (pad) pad.hidden = mode === "stopwatch";
+  if (adj) adj.hidden = mode !== "countdown";
+  if (alarmRow) alarmRow.hidden = mode !== "alarm";
 }
 
 function renderTimer() {
@@ -31,11 +62,9 @@ function renderTimer() {
     : (timerState.running ? "Running" : "Idle");
 
   if (timerState.mode === "countdown") {
-    main = formatTimerMs(timerState.remainingMs);
-    subText = "";
+    main = formatTimerMs(timerState.remainingMs); // never AM/PM
   } else if (timerState.mode === "stopwatch") {
-    main = formatTimerMs(timerState.elapsedMs);
-    subText = "";
+    main = formatTimerMs(timerState.elapsedMs);   // never AM/PM
   } else if (timerState.mode === "alarm") {
     if (timerState.alarmAt) {
       const d = new Date(timerState.alarmAt);
@@ -46,50 +75,29 @@ function renderTimer() {
         : `in ${mins}m`;
     } else {
       main = "--:--";
-      subText = "Set a Alarm Time";
-    }
-
-    if (disp) disp.textContent = main;
-    if (sub) sub.textContent = subText;
-    if (status) status.textContent = statusText;
-    if (startBtn) startBtn.textContent = timerState.running ? "Pause" : "Start";
-
-    const homeDisp = document.getElementById("timerHomeDisplay");
-    const homeState = document.getElementById("timerHomeState");
-    const homeBadge = document.getElementById("timerHomeBadge");
-    if (homeDisp) homeDisp.textContent = main;
-    if (homeState) homeState.textContent = statusText;
-    if (homeBadge) {
-      homeBadge.textContent = timerState.alarming
-        ? "!"
-        : (timerState.running ? "ON" : "--");
-    }
-
-    document.querySelectorAll(".timerModeBtn").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.timerMode === timerState.mode);
-    });
-    updateTimerChrome();
-    if (currentPage === "timer" || timerState.alarming || timerState.running) {
-      notifyRendered();
+      subText = "Set a time";
     }
   }
-}
 
-function nextTimeTodayOrTomorrow(h, m) {
-  const d = new Date();
-  d.setSeconds(0, 0);
-  d.setHours(h, m, 0, 0);
-  if (d.getTime() <= Date.now()) {
-    d.setDate(d.getDate() + 1);
+  if (disp) disp.textContent = main;
+  if (sub) sub.textContent = subText;
+  if (status) status.textContent = statusText;
+  if (startBtn) startBtn.textContent = timerState.running ? "Pause" : "Start";
+
+  const homeDisp = document.getElementById("timerHomeDisplay");
+  const homeState = document.getElementById("timerHomeState");
+  const homeBadge = document.getElementById("timerHomeBadge");
+  if (homeDisp) homeDisp.textContent = main;
+  if (homeState) homeState.textContent = statusText;
+  if (homeBadge) {
+    homeBadge.textContent = timerState.alarming ? "!" : (timerState.running ? "ON" : "--");
   }
-  return d.getTime();
-}
 
-// in preset click handler:
-if (timerState.mode === "alarm") {
-  const sec = Number(btn.getAttribute("data-timer-preset")) || 0;
-  // treat 60/300/600/1800 as "from now" still, OR map buttons to wall times:
-  timerState.alarmAt = Date.now() + sec * 1000;
+  updateTimerChrome();
+
+  if (currentPage === "timer" || timerState.alarming || timerState.running) {
+    notifyRendered();
+  }
 }
 
 function fireTimerAlert(kind) {
@@ -129,41 +137,32 @@ function timerTick() {
       }
     } else if (timerState.mode === "stopwatch") {
       timerState.elapsedMs += dt;
-    } else if (timerState.mode === "alarm" && timerState.alarmAt) {
-      if (now >= timerState.alarmAt) {
-        fireTimerAlert("alarm");
-        return;
-      }
+    } else if (timerState.mode === "alarm" && timerState.alarmAt && now >= timerState.alarmAt) {
+      fireTimerAlert("alarm");
+      return;
     }
   }
 
-  if (timerState.running || currentPage === "timer") {
-    renderTimer();
-  }
+  if (timerState.running || currentPage === "timer") renderTimer();
 }
 
 function setTimerMode(mode) {
+  clearTimerAlert();
   timerState.mode = mode;
   timerState.running = false;
-  timerState.alarming = false;
-  document.body.classList.remove("timerAlarming");
+  timerState.lastTick = 0;
   if (mode === "countdown" && timerState.remainingMs <= 0) {
     timerState.remainingMs = 5 * 60 * 1000;
   }
-  if (mode === "stopwatch") {
-    timerState.elapsedMs = 0;
-  }
+  if (mode === "stopwatch") timerState.elapsedMs = 0;
   renderTimer();
-  updateTimerChrome();
+  notifyActivity();
 }
 
 function toggleTimerRun() {
   clearTimerAlert();
-  if (timerState.mode === "countdown" && timerState.remainingMs <= 0) {
-    return;
-  }
+  if (timerState.mode === "countdown" && timerState.remainingMs <= 0) return;
   if (timerState.mode === "alarm" && !timerState.alarmAt) {
-    // default: alarm in 1 minute if none set
     timerState.alarmAt = Date.now() + 60 * 1000;
   }
   timerState.running = !timerState.running;
@@ -187,32 +186,7 @@ function resetTimer() {
   notifyActivity();
 }
 
-function updateTimerChrome() {
-  const pad = document.getElementById("timerPad");
-  const adj = document.getElementById("timerAdjust");
-  const adjSec = document.querySelectorAll("[data-timer-adj='-10'], [data-timer-adj='10']");
-  const adjMin = document.querySelectorAll("[data-timer-adj='-60'], [data-timer-adj='60']");
-
-  const mode = timerState.mode;
-
-  // Stopwatch: no presets, no ±
-  if (pad) pad.hidden = mode === "stopwatch";
-  if (adj) adj.hidden = mode === "stopwatch";
-
-  // Alarm: hide ±10s; keep ±1m (or hide all ± and use hour/min only — below)
-  adjSec.forEach((el) => {
-    el.hidden = mode === "alarm" || mode === "stopwatch";
-  });
-  adjMin.forEach((el) => {
-    el.hidden = mode === "stopwatch";
-  });
-
-  // Optional dedicated alarm row
-  const alarmRow = document.getElementById("timerAlarmRow");
-  if (alarmRow) alarmRow.hidden = mode !== "alarm";
-}
-
-// --- wire controls once DOM is ready ---
+// --- wire once ---
 document.querySelectorAll("[data-timer-mode]").forEach((btn) => {
   btn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -227,23 +201,12 @@ document.querySelectorAll("[data-timer-preset]").forEach((btn) => {
     ev.stopPropagation();
     const sec = Number(btn.getAttribute("data-timer-preset")) || 0;
     clearTimerAlert();
+    timerState.mode = "countdown";
     timerState.running = false;
-    if (timerState.mode === "alarm") {
-      timerState.alarmAt = Date.now() + sec * 1000;
-    } else {
-      timerState.mode = "countdown";
-      timerState.remainingMs = sec * 1000;
-    }
+    timerState.remainingMs = sec * 1000;
     renderTimer();
     notifyActivity();
   });
-});
-
-document.querySelectorAll(".timerPresetCd").forEach((b) => {
-  b.hidden = mode !== "countdown";
-});
-document.querySelectorAll(".timerPresetAl").forEach((b) => {
-  b.hidden = mode !== "alarm";
 });
 
 document.querySelectorAll("[data-alarm-clock]").forEach((btn) => {
@@ -251,6 +214,7 @@ document.querySelectorAll("[data-alarm-clock]").forEach((btn) => {
     ev.preventDefault();
     ev.stopPropagation();
     const [h, m] = (btn.getAttribute("data-alarm-clock") || "7:00").split(":").map(Number);
+    clearTimerAlert();
     timerState.mode = "alarm";
     timerState.running = false;
     timerState.alarmAt = nextTimeTodayOrTomorrow(h, m || 0);
@@ -259,14 +223,25 @@ document.querySelectorAll("[data-alarm-clock]").forEach((btn) => {
   });
 });
 
+document.querySelectorAll("[data-timer-adj]").forEach((btn) => {
+  btn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const sec = Number(btn.getAttribute("data-timer-adj")) || 0;
+    if (timerState.mode === "countdown") {
+      timerState.remainingMs = Math.max(0, timerState.remainingMs + sec * 1000);
+      renderTimer();
+      notifyActivity();
+    }
+  });
+});
+
 document.querySelectorAll("[data-alarm-adj]").forEach((btn) => {
   btn.addEventListener("click", (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
     const minutes = Number(btn.getAttribute("data-alarm-adj")) || 0;
-    if (!timerState.alarmAt) {
-      timerState.alarmAt = Date.now() + 60 * 1000;
-    }
+    if (!timerState.alarmAt) timerState.alarmAt = Date.now() + 60 * 1000;
     timerState.alarmAt = Math.max(Date.now() + 30 * 1000, timerState.alarmAt + minutes * 60 * 1000);
     renderTimer();
     notifyActivity();
