@@ -18,6 +18,7 @@ public sealed class DashboardTransport : IDisposable
     private const byte CmdMem32 = 0xF5;
     private const byte CmdStreamCtl = 0xF7;
     private const byte CmdSetDisplayMode = 0x50;
+    private const byte CmdBrightness = 0x18;//Displays brightness
     private const byte StreamTargetRaw = 5;
 
     private const uint StaticPresentModeAddr = 0x001251EC;
@@ -429,6 +430,10 @@ public sealed class DashboardTransport : IDisposable
         SendOsdControl(1);
         PollDashboardLocked();
         _lastDashboardPollUtc = DateTime.UtcNow;
+        // Apply configured backlight (MSI Center uses HID cmd 0x18)
+        var brightness = _config?.Brightness ?? 100;
+        //Thread.Sleep(50);  // put in a slight debounce if glitchs occure 
+        Try(() => SetBrightnessLocked(brightness));
     }
 
     private void FastStreamStart(uint dst, int total)
@@ -530,6 +535,23 @@ public sealed class DashboardTransport : IDisposable
         var report = MakeReport1(CmdOsdCtl);
         report[4] = subCommand;
         SendReport1(report);
+    }
+
+    private void SetBrightnessLocked(int percent)
+    {
+        percent = Math.Clamp(percent, 0, 100);
+        var report = MakeReport1(0x18); // report[0]=1, [1]=0x6B, [2]=0x5A, [3]=cmd
+        // 01 6B 5A 18 00 | 04 00 00 00 | XX 00 00 00 ...
+        report[4] = 0x00;
+        report[5] = 0x04;
+        report[6] = 0x00;
+        report[7] = 0x00;
+        report[8] = 0x00;
+        report[9] = (byte)percent;  // 0..100
+        report[10] = 0x00;
+        report[11] = 0x00;
+        SendReport1(report);
+        _log($"Brightness set to {percent}%.");
     }
 
     private void RestoreDisplayLocked()

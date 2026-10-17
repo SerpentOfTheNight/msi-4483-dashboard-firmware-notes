@@ -97,11 +97,13 @@ This is not official firmware and not an official tool. Flashing the wrong image
 - Weather, can show your current weather conditions and upcoming forecast (Unlike MSI which stopped supporting weather service back in June of 2024)
 - Media Player with Windows media integration support to display media metadata, thumbnails etc with complatable players
 - Media Gallery that can switch between types, play videos, gif, show pic, allows for high quality videos to be shown vs the native app...
+- Not limited to using just the M-Vision USB port on your motherboard to plug it in. (This has not be long term fully tested.)
 
 ### Things about equal between the flashed and the Orginal MSI M-Vision Dashboard
 - Support for hotkey to open calculator from the display
 - Support for hotkey to open browser from the display
 - Support for hotkey to hide/show desktop from the display
+- Can adjust the display's brightness properly (todo adding support for changing it on the fly)
 
 
 ### Current Drawbacks Vs the Orginal MSI M-Vision Dashboard 
@@ -115,7 +117,6 @@ This is not official firmware and not an official tool. Flashing the wrong image
 - No current support to get into the MSI Center from the display
 - No current support to control the led light modes from the display
 - No current support to play audio out of the M-Vision's little speaker
-- No current support to control the brightness 
 
 
 ### Current Issues

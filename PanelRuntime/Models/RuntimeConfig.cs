@@ -44,6 +44,9 @@ public sealed class RuntimeConfig
     public string WeatherTempUnit { get; set; } = "fahrenheit"; // or celsius
     public int WeatherPollMinutes { get; set; } = 20;
 
+    /// <summary>Panel backlight 0–100 (HID cmd 0x18).</summary>
+    public int Brightness { get; set; } = 100;
+
     
     public Dictionary<string, string> NetworkAdapters { get; set; } = new(StringComparer.OrdinalIgnoreCase)
     {
