@@ -318,7 +318,16 @@ private void WebView_WebMessageReceived(object? sender, CoreWebView2WebMessageRe
         }
         NotifyUserActivity("volume");
     }
-    else if (message.StartsWith("shell:", StringComparison.OrdinalIgnoreCase))
+
+    else if (message.StartsWith("alarm:", StringComparison.OrdinalIgnoreCase))
+    {
+        var cmd = message["alarm:".Length..].Trim().ToLowerInvariant();
+        if (cmd == "play")
+            AlarmAudio.Play(_config.AlarmSoundPath);
+        else if (cmd == "stop")
+            AlarmAudio.Stop();
+        NotifyUserActivity("alarm");
+    }else if (message.StartsWith("shell:", StringComparison.OrdinalIgnoreCase))
     {
         var cmd = message["shell:".Length..].Trim().ToLowerInvariant();
         try
@@ -388,6 +397,8 @@ private async void MediaTimer_Tick(object? sender, EventArgs e)
         _log($"Media session: {ex.Message}");
     }
 }
+
+
 
 private void StartInfoTimers()
 {

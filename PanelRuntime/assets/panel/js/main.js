@@ -50,7 +50,8 @@ const pages = {
   nowplaying: { title: "Now Playing", kicker: "Media", primaryLabel: "" },
   board: { title: "Storage", kicker: "Drives", primaryLabel: "Primary Drive Used" },
   weather:{ title: "Weather", kicker: "Local", primaryLabel: "" },
-  news: { title: "News", kicker: "RSS", primaryLabel: "" }
+  news: { title: "News", kicker: "RSS", primaryLabel: "" },
+  timer: { title: "Timer", kicker: "Clock", primaryLabel: "" }
 };
 
 let homePageIndex = 0;
@@ -851,6 +852,8 @@ function openPage(page) {
       renderWeather();          // paint from cached snapshot
     } else if (page === "news" && typeof renderRss === "function") {
       renderRss();
+    } else if (page === "timer" && typeof renderRss === "function") {
+      renderTimer();
     } else if (page !== "home") {
       renderDetail();
     }
@@ -1956,6 +1959,7 @@ document.querySelectorAll(".themeToggle").forEach(btn => {
     }
     applyTheme();
     setHomePage(0);   // show home page 1 on load
+    openPage("timer");
     restartStorageCycle();  // safe if snapshot is still empty (timer no-ops or waits)
   });
 });

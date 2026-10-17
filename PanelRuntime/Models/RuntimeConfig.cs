@@ -43,6 +43,7 @@ public sealed class RuntimeConfig
     public double WeatherLongitude { get; set; } = -110.5786;
     public string WeatherTempUnit { get; set; } = "fahrenheit"; // or celsius
     public int WeatherPollMinutes { get; set; } = 20;
+    public string AlarmSoundPath { get; set; } = "";
 
     /// <summary>Panel backlight 0–100 (HID cmd 0x18).</summary>
     public int Brightness { get; set; } = 100;
