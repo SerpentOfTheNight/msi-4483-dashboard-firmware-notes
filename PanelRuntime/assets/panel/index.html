@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=480, initial-scale=1">
@@ -10,6 +11,7 @@
   <link rel="stylesheet" href="css/storage.css">
   <link rel="stylesheet" href="css/timer.css">
 </head>
+
 <body>
   <main class="panel">
     <section class="topbar">
@@ -21,164 +23,164 @@
     </section>
 
     <section id="homeView" class="homeView">
-  <div class="homePages">
-    <!-- PAGE 1: sensors -->
-    <div class="homePage" data-home-page="0">
-      <section class="summaryGrid">
-        <article class="summaryCard meterCard accent-green interactive" data-page="cpu">
-          <div class="cardHead">
-            <span>CPU Temp</span>
-            <b id="cpuLoad">--</b>
-          </div>
-          <strong id="cpuTemp" class="summaryValue">--</strong>
-          <div class="summaryMeta">
-            <span id="cpuClock">--</span>
-            <span id="cpuPower">--</span>
-          </div>
-          <canvas class="sparkline" id="cpuTempSpark" width="200" height="46"></canvas>
-        </article>
+      <div class="homePages">
+        <!-- PAGE 1: sensors -->
+        <div class="homePage" data-home-page="0">
+          <section class="summaryGrid">
+            <article class="summaryCard meterCard accent-green interactive" data-page="cpu">
+              <div class="cardHead">
+                <span>CPU Temp</span>
+                <b id="cpuLoad">--</b>
+              </div>
+              <strong id="cpuTemp" class="summaryValue">--</strong>
+              <div class="summaryMeta">
+                <span id="cpuClock">--</span>
+                <span id="cpuPower">--</span>
+              </div>
+              <canvas class="sparkline" id="cpuTempSpark" width="200" height="46"></canvas>
+            </article>
 
-        <article class="summaryCard meterCard accent-blue interactive" data-page="gpu">
-          <div class="cardHead">
-            <span>GPU Temp</span>
-            <b id="gpuLoad">--</b>
-          </div>
-          <strong id="gpuTemp" class="summaryValue">--</strong>
-          <div class="summaryMeta">
-            <span id="gpuClockHome">--</span>
-            <span id="gpuPowerHome">--</span>
-          </div>
-          <canvas class="sparkline" id="gpuTempSpark" width="200" height="46"></canvas>
-        </article>
-      </section>
-      <!-- cooling content -->
-      <section class="stripCard coolingStrip meterCard accent-amber interactive" data-page="cooling">
-        <div class="cardHead">
-          <span>Cooling</span>
+            <article class="summaryCard meterCard accent-blue interactive" data-page="gpu">
+              <div class="cardHead">
+                <span>GPU Temp</span>
+                <b id="gpuLoad">--</b>
+              </div>
+              <strong id="gpuTemp" class="summaryValue">--</strong>
+              <div class="summaryMeta">
+                <span id="gpuClockHome">--</span>
+                <span id="gpuPowerHome">--</span>
+              </div>
+              <canvas class="sparkline" id="gpuTempSpark" width="200" height="46"></canvas>
+            </article>
+          </section>
+          <!-- cooling content -->
+          <section class="stripCard coolingStrip meterCard accent-amber interactive" data-page="cooling">
+            <div class="cardHead">
+              <span>Cooling</span>
+            </div>
+            <div class="stripValues compactTwo">
+              <span>Rad <b id="caseFan">--</b></span>
+              <span>Pump <b id="pumpHome">--</b></span>
+            </div>
+          </section>
+
+          <section class="secondaryGrid">
+            <article class="infoCard meterCard accent-pink interactive" data-page="memory">
+              <div class="cardHead">
+                <span>RAM</span>
+                <b id="memory">--</b>
+              </div>
+              <strong id="memoryUsed">--</strong>
+              <div class="summaryMeta">
+                <span id="memoryTotal">--</span>
+                <span id="memorySpeed">--</span>
+              </div>
+            </article>
+
+            <article class="infoCard meterCard accent-green interactive" data-page="network">
+              <div class="cardHead">
+                <span id="networkName">Network</span>
+                <b id="networkLink">--</b>
+              </div>
+              <div id="network" class="networkValue">
+                <div class="netRow"><span class="netArrow rxArrow">↓</span><b id="networkRx">--</b></div>
+                <div class="netRow"><span class="netArrow txArrow">↑</span><b id="networkTx">--</b></div>
+              </div>
+            </article>
+          </section>
+
+          <!-- Media gallery card -->
+          <!-- Now Playing card -->
+          <section class="secondaryGrid">
+            <article class="infoCard meterCard accent-pink interactive" data-page="media">
+              <div class="cardHead">
+                <span>Media</span>
+                <b id="mediaCountHome">--</b>
+              </div>
+              <strong>Gallery</strong>
+              <div class="summaryMeta">
+                <span>Images · GIFs · Video</span>
+              </div>
+            </article>
+            <!-- Now Playing card -->
+            <article class="infoCard meterCard accent-pink interactive" data-page="nowplaying">
+              <div class="cardHead">
+                <span>Now Playing</span>
+                <b id="npHomeStatus">--</b>
+              </div>
+              <strong id="npHomeTitle" class="summaryValue npHomeTitle">Nothing playing</strong>
+              <div class="summaryMeta">
+                <span id="npHomeArtist">--</span>
+              </div>
+            </article>
+          </section>
+
+
         </div>
-        <div class="stripValues compactTwo">
-          <span>Rad <b id="caseFan">--</b></span>
-          <span>Pump <b id="pumpHome">--</b></span>
+
+        <!-- PAGE 2: media + storage -->
+        <div class="homePage" data-home-page="1" hidden>
+          <section class="stripCard boardStrip meterCard accent-blue interactive" data-page="board">
+            <!-- storage content -->
+            <div class="cardHead">
+              <span>Storage</span>
+              <b id="storageUsage">--</b>
+            </div>
+            <div class="stripValues">
+              <span>Disk <b id="storageModel">--</b></span>
+              <span>Temp <b id="storageTemp">--</b></span>
+              <span>Free <b id="storageFree">--</b></span>
+            </div>
+          </section>
+          <section class="secondaryGrid">
+            <article class="infoCard meterCard accent-blue interactive" data-page="weather">
+              <div class="cardHead">
+                <span>Weather</span>
+                <b id="wxHomeTemp">--</b>
+              </div>
+              <strong id="wxHomeCond" class="summaryValue">--</strong>
+              <div class="summaryMeta">
+                <span id="wxHomeRange">--</span>
+              </div>
+            </article>
+
+            <article class="infoCard meterCard accent-amber interactive" data-page="news">
+              <div class="cardHead">
+                <span>News</span>
+                <b id="rssHomeCount">--</b>
+              </div>
+              <strong class="summaryValue">RSS</strong>
+              <div class="summaryMeta">
+                <span id="rssHomeTitle">--</span>
+              </div>
+            </article>
+          </section>
+          <section class="secondaryGrid shellGrid">
+            <button type="button" class="shellBtn" data-shell-cmd="calc">Calculator</button>
+            <button type="button" class="shellBtn" data-shell-cmd="browser">Browser</button>
+            <button type="button" class="shellBtn" data-shell-cmd="desktop">Desktop</button>
+          </section>
+          <article class="infoCard meterCard accent-amber interactive" data-page="timer">
+            <div class="cardHead"><span>Timer</span><b id="timerHomeBadge">--</b></div>
+            <strong id="timerHomeDisplay" class="summaryValue">00:00</strong>
+            <div class="summaryMeta"><span id="timerHomeState">Idle</span></div>
+          </article>
         </div>
-      </section>
+      </div>
 
-      <section class="secondaryGrid">
-        <article class="infoCard meterCard accent-pink interactive" data-page="memory">
-          <div class="cardHead">
-            <span>RAM</span>
-            <b id="memory">--</b>
-          </div>
-          <strong id="memoryUsed">--</strong>
-          <div class="summaryMeta">
-            <span id="memoryTotal">--</span>
-            <span id="memorySpeed">--</span>
-          </div>
-        </article>
+      <div class="homeDots" id="homeDots">
+        <button type="button" class="homeDot active" data-home-page="0" aria-label="Home page 1"></button>
+        <button type="button" class="homeDot" data-home-page="1" aria-label="Home page 2"></button>
+      </div>
 
-        <article class="infoCard meterCard accent-green interactive" data-page="network">
-          <div class="cardHead">
-            <span id="networkName">Network</span>
-            <b id="networkLink">--</b>
-          </div>
-          <div id="network" class="networkValue">
-            <div class="netRow"><span class="netArrow rxArrow">↓</span><b id="networkRx">--</b></div>
-            <div class="netRow"><span class="netArrow txArrow">↑</span><b id="networkTx">--</b></div>
-          </div>
-        </article>
-      </section>
-
-      <!-- Media gallery card -->
-      <!-- Now Playing card -->
-      <section class="secondaryGrid">
-        <article class="infoCard meterCard accent-pink interactive" data-page="media">
-        <div class="cardHead">
-          <span>Media</span>
-          <b id="mediaCountHome">--</b>
+      <footer>
+        <span id="sensorCount">0 sensors</span>
+        <div class="footerRight">
+          <span id="updated">--</span>
+          <button class="themeToggle" type="button" aria-label="Toggle theme">A</button>
         </div>
-        <strong>Gallery</strong>
-        <div class="summaryMeta">
-          <span>Images · GIFs · Video</span>
-        </div>
-        </article>
-        <!-- Now Playing card -->
-        <article class="infoCard meterCard accent-pink interactive" data-page="nowplaying">
-          <div class="cardHead">
-            <span>Now Playing</span>
-            <b id="npHomeStatus">--</b>
-          </div>
-          <strong id="npHomeTitle" class="summaryValue npHomeTitle">Nothing playing</strong>
-          <div class="summaryMeta">
-            <span id="npHomeArtist">--</span>
-          </div>
-        </article>
-      </section>
-
-
-    </div>
-
-    <!-- PAGE 2: media + storage -->
-    <div class="homePage" data-home-page="1" hidden>
-      <section class="stripCard boardStrip meterCard accent-blue interactive" data-page="board">
-        <!-- storage content -->
-         <div class="cardHead">
-          <span>Storage</span>
-          <b id="storageUsage">--</b>
-        </div>
-        <div class="stripValues">
-          <span>Disk <b id="storageModel">--</b></span>
-          <span>Temp <b id="storageTemp">--</b></span>
-          <span>Free <b id="storageFree">--</b></span>
-        </div>
-      </section>
-      <section class="secondaryGrid">
-        <article class="infoCard meterCard accent-blue interactive" data-page="weather">
-          <div class="cardHead">
-            <span>Weather</span>
-            <b id="wxHomeTemp">--</b>
-          </div>
-          <strong id="wxHomeCond" class="summaryValue">--</strong>
-          <div class="summaryMeta">
-            <span id="wxHomeRange">--</span>
-          </div>
-        </article>
-
-        <article class="infoCard meterCard accent-amber interactive" data-page="news">
-          <div class="cardHead">
-            <span>News</span>
-            <b id="rssHomeCount">--</b>
-          </div>
-          <strong class="summaryValue">RSS</strong>
-          <div class="summaryMeta">
-            <span id="rssHomeTitle">--</span>
-          </div>
-        </article>
-      </section>
-      <section class="secondaryGrid shellGrid">
-        <button type="button" class="shellBtn" data-shell-cmd="calc">Calculator</button>
-        <button type="button" class="shellBtn" data-shell-cmd="browser">Browser</button>
-        <button type="button" class="shellBtn" data-shell-cmd="desktop">Desktop</button>
-      </section>
-      <article class="infoCard meterCard accent-amber interactive" data-page="timer">
-  <div class="cardHead"><span>Timer</span><b id="timerHomeBadge">--</b></div>
-  <strong id="timerHomeDisplay" class="summaryValue">00:00</strong>
-  <div class="summaryMeta"><span id="timerHomeState">Idle</span></div>
-</article>
-    </div>
-  </div>
-
-  <div class="homeDots" id="homeDots">
-    <button type="button" class="homeDot active" data-home-page="0" aria-label="Home page 1"></button>
-    <button type="button" class="homeDot" data-home-page="1" aria-label="Home page 2"></button>
-  </div>
-
-  <footer>
-    <span id="sensorCount">0 sensors</span>
-    <div class="footerRight">
-      <span id="updated">--</span>
-      <button class="themeToggle" type="button" aria-label="Toggle theme">A</button>
-    </div>
-  </footer>
-</section>
+      </footer>
+    </section>
 
 
     <section id="detailView" class="detailView" hidden>
@@ -201,117 +203,127 @@
     </section>
 
     <section id="mediaView" class="mediaView" hidden>
-  <div id="mediaStage" class="mediaStage">
-    <img id="mediaImage" class="mediaMedia" alt="" hidden>
-    <video id="mediaVideo" class="mediaMedia" playsinline muted hidden></video>
-    <div id="mediaEmpty" class="mediaEmpty">No media</div>
-  </div>
-  <footer>
-    <span id="mediaName">--</span>
-    <div class="footerRight">
-      <span id="mediaCounter">0 / 0</span>
-      <button class="themeToggle" type="button" aria-label="Toggle theme">A</button>
-    </div>
-  </footer>
-</section>
-<section id="nowPlayingView" class="nowPlayingView" hidden>
-  <div class="npArtWrap">
-    <img id="npArt" class="npArt" alt="" hidden>
-    <div id="npArtPlaceholder" class="npArtPlaceholder">♪</div>
-  </div>
-  <div class="npMeta">
-    <div id="npTitle" class="npTitle">Nothing playing</div>
-    <div id="npArtist" class="npArtist">--</div>
-    <div id="npAlbum" class="npAlbum">--</div>
-    <div id="npStatus" class="npStatus">Stopped</div>
-  </div>
-  <div class="npControls">
-    <button type="button" class="npBtn" data-media-cmd="prev" aria-label="Previous">⏮</button>
-    <button type="button" class="npBtn npBtnMain" data-media-cmd="playpause" aria-label="Play/Pause">⏯</button>
-    <button type="button" class="npBtn" data-media-cmd="next" aria-label="Next">⏭</button>
-  </div>
-  <div class="npProgressWrap">
-    <div id="npProgressBar" class="npProgressBar"></div>
-  </div>
-  <div class="npTimes">
-    <span id="npPos">0:00</span>
-    <span id="npDur">0:00</span>
-  </div>
-  <div class="npVolBarWrap">
-    <div id="npVolBar" class="npVolBar"></div>
-  </div>
-  <div class="npVolume">
-    <button type="button" class="npBtn" data-volume-cmd="down" aria-label="Volume down">🔉</button>
-    <button type="button" class="npBtn" data-volume-cmd="mute" id="npMuteBtn" aria-label="Mute">🔇</button>
-    <button type="button" class="npBtn" data-volume-cmd="up" aria-label="Volume up">🔊</button>
-  </div>
-</section>
-<section id="weatherView" class="weatherView" hidden>
-  <div class="wxCurrent">
-    <div id="wxTemp" class="wxTemp">--</div>
-    <div id="wxCond" class="wxCond">--</div>
-    <div class="wxMeta">
-      <span id="wxHumidity">Humidity --</span>
-      <span id="wxWind">Wind --</span>
-    </div>
-  </div>
-  <div id="wxForecast" class="wxForecast"></div>
-  <footer>
-    <span id="wxUpdated">--</span>
-    <div class="footerRight">
-      <button class="themeToggle" type="button">A</button>
-    </div>
-  </footer>
-</section>
+      <div id="mediaStage" class="mediaStage">
+        <img id="mediaImage" class="mediaMedia" alt="" hidden>
+        <video id="mediaVideo" class="mediaMedia" playsinline muted hidden></video>
+        <div id="mediaEmpty" class="mediaEmpty">No media</div>
+      </div>
+      <footer>
+        <span id="mediaName">--</span>
+        <div class="footerRight">
+          <span id="mediaCounter">0 / 0</span>
+          <button class="themeToggle" type="button" aria-label="Toggle theme">A</button>
+        </div>
+      </footer>
+    </section>
+    <section id="nowPlayingView" class="nowPlayingView" hidden>
+      <div class="npArtWrap">
+        <img id="npArt" class="npArt" alt="" hidden>
+        <div id="npArtPlaceholder" class="npArtPlaceholder">♪</div>
+      </div>
+      <div class="npMeta">
+        <div id="npTitle" class="npTitle">Nothing playing</div>
+        <div id="npArtist" class="npArtist">--</div>
+        <div id="npAlbum" class="npAlbum">--</div>
+        <div id="npStatus" class="npStatus">Stopped</div>
+      </div>
+      <div class="npControls">
+        <button type="button" class="npBtn" data-media-cmd="prev" aria-label="Previous">⏮</button>
+        <button type="button" class="npBtn npBtnMain" data-media-cmd="playpause" aria-label="Play/Pause">⏯</button>
+        <button type="button" class="npBtn" data-media-cmd="next" aria-label="Next">⏭</button>
+      </div>
+      <div class="npProgressWrap">
+        <div id="npProgressBar" class="npProgressBar"></div>
+      </div>
+      <div class="npTimes">
+        <span id="npPos">0:00</span>
+        <span id="npDur">0:00</span>
+      </div>
+      <div class="npVolBarWrap">
+        <div id="npVolBar" class="npVolBar"></div>
+      </div>
+      <div class="npVolume">
+        <button type="button" class="npBtn" data-volume-cmd="down" aria-label="Volume down">🔉</button>
+        <button type="button" class="npBtn" data-volume-cmd="mute" id="npMuteBtn" aria-label="Mute">🔇</button>
+        <button type="button" class="npBtn" data-volume-cmd="up" aria-label="Volume up">🔊</button>
+      </div>
+    </section>
+    <section id="weatherView" class="weatherView" hidden>
+      <div class="wxCurrent">
+        <div id="wxTemp" class="wxTemp">--</div>
+        <div id="wxCond" class="wxCond">--</div>
+        <div class="wxMeta">
+          <span id="wxHumidity">Humidity --</span>
+          <span id="wxWind">Wind --</span>
+        </div>
+      </div>
+      <div id="wxForecast" class="wxForecast"></div>
+      <footer>
+        <span id="wxUpdated">--</span>
+        <div class="footerRight">
+          <button class="themeToggle" type="button">A</button>
+        </div>
+      </footer>
+    </section>
 
-<section id="newsView" class="newsView" hidden>
-  <div id="rssList" class="rssList"></div>
-  <div id="rssPager" class="rssPager">--</div>
-  <footer>
-    <span id="rssUpdated">--</span>
-    <div class="footerRight">
-      <button class="themeToggle" type="button" aria-label="Toggle theme">A</button>
-    </div>
-  </footer>
-</section>
+    <section id="newsView" class="newsView" hidden>
+      <div id="rssList" class="rssList"></div>
+      <div id="rssPager" class="rssPager">--</div>
+      <footer>
+        <span id="rssUpdated">--</span>
+        <div class="footerRight">
+          <button class="themeToggle" type="button" aria-label="Toggle theme">A</button>
+        </div>
+      </footer>
+    </section>
 
-<section id="timerView" class="timerView" hidden>
-  <div class="timerModeRow">
-    <button type="button" class="timerModeBtn active" data-timer-mode="countdown">Countdown</button>
-    <button type="button" class="timerModeBtn" data-timer-mode="alarm">Alarm</button>
-    <button type="button" class="timerModeBtn" data-timer-mode="stopwatch">Stopwatch</button>
-  </div>
+    <section id="timerView" class="timerView" hidden>
+      <div class="timerModeRow">
+        <button type="button" class="timerModeBtn active" data-timer-mode="countdown">Countdown</button>
+        <button type="button" class="timerModeBtn" data-timer-mode="alarm">Alarm</button>
+        <button type="button" class="timerModeBtn" data-timer-mode="stopwatch">Stopwatch</button>
+      </div>
 
-  <div id="timerDisplay" class="timerDisplay">00:00</div>
-  <div id="timerSub" class="timerSub">--</div>
+      <div id="timerDisplay" class="timerDisplay">00:00</div>
+      <div id="timerSub" class="timerSub">--</div>
 
-  <div id="timerPad" class="timerPad">
-    <!-- countdown: quick presets + custom -->
-    <button type="button" data-timer-preset="60">1m</button>
-    <button type="button" data-timer-preset="300">5m</button>
-    <button type="button" data-timer-preset="600">10m</button>
-    <button type="button" data-timer-preset="1800">30m</button>
-  </div>
+      <div class="timerAdjust" id="timerAdjust">
+        <button type="button" data-timer-adj="-60">−1m</button>
+        <button type="button" data-timer-adj="-10">−10s</button>
+        <button type="button" data-timer-adj="10">+10s</button>
+        <button type="button" data-timer-adj="60">+1m</button>
+      </div>
+      <div id="timerAlarmRow" class="timerAlarmRow" hidden>
+        <button type="button" data-alarm-adj="-60">−1h</button>
+        <button type="button" data-alarm-adj="-1">−1m</button>
+        <button type="button" data-alarm-adj="1">+1m</button>
+        <button type="button" data-alarm-adj="60">+1h</button>
+      </div>
+      <div id="timerPad" class="timerPad">
+        <!-- countdown presets -->
+        <button type="button" class="timerPresetCd" data-timer-preset="60">1m</button>
+        <button type="button" class="timerPresetCd" data-timer-preset="300">5m</button>
+        <button type="button" class="timerPresetCd" data-timer-preset="600">10m</button>
+        <button type="button" class="timerPresetCd" data-timer-preset="1800">30m</button>
+        <!-- alarm wall-clock presets -->
+        <button type="button" class="timerPresetAl" data-alarm-clock="7:00" hidden>7:00</button>
+        <button type="button" class="timerPresetAl" data-alarm-clock="12:00" hidden>12:00</button>
+        <button type="button" class="timerPresetAl" data-alarm-clock="18:00" hidden>18:00</button>
+        <button type="button" class="timerPresetAl" data-alarm-clock="22:00" hidden>22:00</button>
+      </div>
 
-  <div class="timerAdjust" id="timerAdjust">
-    <button type="button" data-timer-adj="-60">−1m</button>
-    <button type="button" data-timer-adj="-10">−10s</button>
-    <button type="button" data-timer-adj="10">+10s</button>
-    <button type="button" data-timer-adj="60">+1m</button>
-  </div>
+      <div class="timerControls">
+        <button type="button" id="timerStartBtn" class="timerBtnMain">Start</button>
+        <button type="button" id="timerResetBtn" class="timerBtn">Reset</button>
+      </div>
 
-  <div class="timerControls">
-    <button type="button" id="timerStartBtn" class="timerBtnMain">Start</button>
-    <button type="button" id="timerResetBtn" class="timerBtn">Reset</button>
-  </div>
-
-  <footer>
-    <span id="timerStatus">Idle</span>
-    <div class="footerRight">
-      <button class="themeToggle" type="button">A</button>
-    </div>
-  </footer>
-</section>
+      <footer>
+        <span id="timerStatus">Idle</span>
+        <div class="footerRight">
+          <button class="themeToggle" type="button">A</button>
+        </div>
+      </footer>
+    </section>
 
 
   </main>
@@ -322,6 +334,7 @@
   <script src="js/sensors.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/timer.js"></script>
-  <script src="js/main.js"></script>  <!-- last: wires openPage, starts intervals -->
+  <script src="js/main.js"></script> <!-- last: wires openPage, starts intervals -->
 </body>
+
 </html>

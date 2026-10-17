@@ -828,15 +828,17 @@ function openPage(page) {
   const nowPlayingView = document.getElementById("nowPlayingView");
   const weatherView = document.getElementById("weatherView");
   const newsView = document.getElementById("newsView");
+  const timerView = document.getElementById("timerView");
 
   if (homeView) homeView.hidden = page !== "home";
   if (detailView) detailView.hidden =
     !(page !== "home" && page !== "media" && page !== "nowplaying" &&
-      page !== "weather" && page !== "news");
+      page !== "weather" && page !== "news " && page !== "timer");
   if (mediaView) mediaView.hidden = page !== "media";
   if (nowPlayingView) nowPlayingView.hidden = page !== "nowplaying";
   if (weatherView) weatherView.hidden = page !== "weather";
   if (newsView) newsView.hidden = page !== "news";
+  if (timerView) timerView.hidden = page !== "timer";
 
   ids.backButton.hidden = page === "home";
   ids.pageTitle.textContent = pages[page].title;
@@ -852,7 +854,7 @@ function openPage(page) {
       renderWeather();          // paint from cached snapshot
     } else if (page === "news" && typeof renderRss === "function") {
       renderRss();
-    } else if (page === "timer" && typeof renderRss === "function") {
+    } else if (page === "timer" && typeof renderTimer === "function") {
       renderTimer();
     } else if (page !== "home") {
       renderDetail();
@@ -1959,7 +1961,6 @@ document.querySelectorAll(".themeToggle").forEach(btn => {
     }
     applyTheme();
     setHomePage(0);   // show home page 1 on load
-    openPage("timer");
     restartStorageCycle();  // safe if snapshot is still empty (timer no-ops or waits)
   });
 });
