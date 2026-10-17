@@ -4,7 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=480, initial-scale=1">
   <title>MSI Panel</title>
-  <link rel="stylesheet" href="panel.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/home.css">
+  <link rel="stylesheet" href="css/media_player.css">
+  <link rel="stylesheet" href="css/storage.css">
+  <link rel="stylesheet" href="css/timer.css">
 </head>
 <body>
   <main class="panel">
@@ -154,6 +158,11 @@
         <button type="button" class="shellBtn" data-shell-cmd="browser">Browser</button>
         <button type="button" class="shellBtn" data-shell-cmd="desktop">Desktop</button>
       </section>
+      <article class="infoCard meterCard accent-amber interactive" data-page="timer">
+  <div class="cardHead"><span>Timer</span><b id="timerHomeBadge">--</b></div>
+  <strong id="timerHomeDisplay" class="summaryValue">00:00</strong>
+  <div class="summaryMeta"><span id="timerHomeState">Idle</span></div>
+</article>
     </div>
   </div>
 
@@ -266,8 +275,50 @@
   </footer>
 </section>
 
+<section id="timerView" class="timerView" hidden>
+  <div class="timerModeRow">
+    <button type="button" class="timerModeBtn active" data-timer-mode="countdown">Countdown</button>
+    <button type="button" class="timerModeBtn" data-timer-mode="alarm">Alarm</button>
+    <button type="button" class="timerModeBtn" data-timer-mode="stopwatch">Stopwatch</button>
+  </div>
+
+  <div id="timerDisplay" class="timerDisplay">00:00</div>
+  <div id="timerSub" class="timerSub">--</div>
+
+  <div id="timerPad" class="timerPad">
+    <!-- countdown: quick presets + custom -->
+    <button type="button" data-timer-preset="60">1m</button>
+    <button type="button" data-timer-preset="300">5m</button>
+    <button type="button" data-timer-preset="600">10m</button>
+    <button type="button" data-timer-preset="1800">30m</button>
+  </div>
+
+  <div class="timerAdjust" id="timerAdjust">
+    <button type="button" data-timer-adj="-60">−1m</button>
+    <button type="button" data-timer-adj="-10">−10s</button>
+    <button type="button" data-timer-adj="10">+10s</button>
+    <button type="button" data-timer-adj="60">+1m</button>
+  </div>
+
+  <div class="timerControls">
+    <button type="button" id="timerStartBtn" class="timerBtnMain">Start</button>
+    <button type="button" id="timerResetBtn" class="timerBtn">Reset</button>
+  </div>
+
+  <footer>
+    <span id="timerStatus">Idle</span>
+    <div class="footerRight">
+      <button class="themeToggle" type="button">A</button>
+    </div>
+  </footer>
+</section>
+
 
   </main>
-  <script src="panel.js"></script>
+  <script src="js/sensors.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/media.js"></script>
+  <script src="js/timer.js"></script>
+  <script src="js/main.js"></script>  <!-- last: wires openPage, starts intervals -->
 </body>
 </html>

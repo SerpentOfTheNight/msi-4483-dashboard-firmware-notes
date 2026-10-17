@@ -1,0 +1,145 @@
+.storageDiskList {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding: 4px 2px 8px;
+}
+
+.detailList { overflow: hidden; }
+body[data-page="board"] .detailList { overflow: hidden; }
+.storageDiskCard { height: 132px; }  /* ~4 fit in 694px */
+
+body[data-page="board"] .detailView,
+body[data-page="network"] .detailView {
+  grid-template-rows: 1fr 34px;
+  min-height: 0;
+}
+
+body[data-page="board"] .detailList,
+body[data-page="network"] .detailList {
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;              /* was hidden */
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+  background: transparent;
+  border: 0;
+}
+
+
+
+.storageDiskCard {
+  position: relative;
+  height: 118px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  overflow: hidden;
+  --accent-fill: rgba(71, 185, 255, 0.18);
+}
+
+body[data-theme="light"] .storageDiskCard {
+  --accent-fill: rgba(50, 130, 220, 0.18);
+}
+
+.storageDiskCard[data-tone="warn"] {
+  --accent-fill: var(--tone-warn-fill);
+}
+
+.storageDiskCard[data-tone="hot"] {
+  --accent-fill: var(--tone-hot-fill);
+}
+
+.storageDiskCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    var(--accent-fill) var(--level, 0%),
+    transparent var(--level, 0%)
+  );
+  pointer-events: none;
+  z-index: 0;
+  transition: background 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.storageDiskCard > * {
+  position: relative;
+  z-index: 1;
+}
+
+.storageDiskHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.storageDiskHead strong {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 25px;
+  line-height: 1;
+}
+
+.storageDiskHead b {
+  flex: 0 0 auto;
+  color: var(--health-ok-fg);
+  background: var(--health-ok-bg);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.storageDiskHead b.healthOk {
+  color: var(--health-ok-fg);
+  background: var(--health-ok-bg);
+}
+
+.storageDiskHead b.healthWarn {
+  color: var(--health-warn-fg);
+  background: var(--health-warn-bg);
+}
+
+.storageDiskMeta {
+  margin-top: 10px;
+  color: var(--fg-muted);
+  font-size: 15px;
+  font-weight: 750;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.storageDiskStats {
+  margin-top: 13px;
+  display: grid;
+  grid-template-columns: 1.35fr 0.65fr 0.65fr;
+  gap: 10px;
+}
+
+.storageDiskStats span {
+  min-width: 0;
+  color: var(--fg-soft);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.storageDiskStats b {
+  display: block;
+  margin-top: 5px;
+  color: var(--fg-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 19px;
+  line-height: 1;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
